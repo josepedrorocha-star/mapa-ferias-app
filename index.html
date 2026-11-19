@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mapa de Férias</title>
+<meta name="robots" content="noindex,nofollow">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+/* ===== FIREBASE: cole aqui os dados do seu projeto (Consola Firebase > Definições do projeto > As suas apps > Configuração) ===== */
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCv12CXiBBMCMHJjlj5WDyCWiwXAaheCZE",
+  authDomain: "mapa-ferias-bc6a9.firebaseapp.com",
+  projectId: "mapa-ferias-bc6a9",
+  storageBucket: "mapa-ferias-bc6a9.firebasestorage.app",
+  messagingSenderId: "933733010232",
+  appId: "1:933733010232:web:fe300fd6a84fae40d70fcd"
+};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,750&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: cabeçalho com anos em separadores → faixa de saldo → calendário de 12 meses à esquerda, painel de períodos/pontes/ajustes à direita (empilha no telemóvel) */
+:root{
+  --bg:#f3f7f9; --surface:#ffffff; --ink:#11212c; --muted:#566874; --line:#d7e1e7; --soft:#e9f0f4;
+  --sea:#0a6d8d; --sea-ink:#ffffff; --sea-soft:#d9eef5;
+  --nac:#c8354f; --nac-bg:#fbe2e7;
+  --lag:#b57a06; --lag-bg:#fbedcc;
+  --por:#6d4fb0; --por-bg:#ebe4f8;
+  --car:#a8327f; --car-bg:#f9e0f0;
+  --wknd:#e8eef2; --wknd-ink:#8696a1;
+  --ok:#2c7a4b; --warn:#b4540a; --esc:#2a9459; --esc-on:#c9f2d9; --esc-bg:#e2f4e9;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d171d; --surface:#14212a; --ink:#e4edf2; --muted:#93a6b2; --line:#253640; --soft:#1a2a34;
+  --sea:#3fb6d9; --sea-ink:#04212b; --sea-soft:#123543;
+  --nac:#ff7d91; --nac-bg:#3b1d25; --lag:#ecb64a; --lag-bg:#3a2d12; --por:#b8a0ec; --por-bg:#2a2342;
+  --car:#f28ccf; --car-bg:#3d1b33; --wknd:#111d24; --wknd-ink:#5d707c; --ok:#6fd39a; --warn:#f2a25b; --esc:#5fd08f; --esc-on:#0b3a22; --esc-bg:#16362a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d171d; --surface:#14212a; --ink:#e4edf2; --muted:#93a6b2; --line:#253640; --soft:#1a2a34;
+  --sea:#3fb6d9; --sea-ink:#04212b; --sea-soft:#123543;
+  --nac:#ff7d91; --nac-bg:#3b1d25; --lag:#ecb64a; --lag-bg:#3a2d12; --por:#b8a0ec; --por-bg:#2a2342;
+  --car:#f28ccf; --car-bg:#3d1b33; --wknd:#111d24; --wknd-ink:#5d707c; --ok:#6fd39a; --warn:#f2a25b; --esc:#5fd08f; --esc-on:#0b3a22; --esc-bg:#16362a; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(26px,4vw,36px);font-weight:750}
+h2{font-size:18px;font-weight:750}
+h3{font-size:15px;font-weight:600}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.where{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:4px}
+.where b{color:var(--ink);font-weight:700}
+.status{font-size:13px;padding:5px 10px;border-radius:999px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.status.ok{color:var(--ok)} .status.err{color:var(--warn)}
+
+.years{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ytab{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px;font-weight:700;font-variant-numeric:tabular-nums}
+.ytab[aria-current="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ynew{border:1px dashed var(--sea);background:transparent;color:var(--sea);padding:7px 14px;border-radius:8px;font-weight:700}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.create{display:grid;gap:12px}
+.create .opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;flex:1 1 240px;cursor:pointer}
+.opt input{margin-top:3px}
+.fields{display:flex;flex-wrap:wrap;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.field input[type=number]{width:96px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:8px;font-weight:700}
+.btn.primary{background:var(--sea);color:var(--sea-ink);border-color:var(--sea)}
+.btn.danger{color:var(--nac);border-color:var(--nac)}
+.btn.small{padding:5px 10px;font-size:13px}
+.check{display:flex;gap:8px;align-items:center;font-size:14px}
+
+.saldo{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.saldo>div{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.saldo .k{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.saldo .v{font-family:var(--f-display);font-size:28px;font-weight:750;font-variant-numeric:tabular-nums;line-height:1.1}
+.saldo .v.sea{color:var(--sea)}
+.saldo .v.warn{color:var(--warn)}
+.bar{grid-column:1/-1;height:6px;background:var(--soft);padding:0!important}
+.bar i{display:block;height:100%;background:var(--sea);transition:width .3s}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+.months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.month{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.mhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.mhead .c{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mhead .c b{color:var(--sea)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.dow{font-size:11px;text-align:center;color:var(--muted);font-weight:700;padding-bottom:2px}
+.d{aspect-ratio:1/1;max-width:100%;border:0;border-radius:6px;background:var(--soft);font-size:13px;font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;justify-content:center;position:relative;padding:0}
+.d.empty{background:transparent;pointer-events:none}
+.d.we{background:var(--wknd);color:var(--wknd-ink)}
+.d.nac{background:var(--nac-bg);color:var(--nac);font-weight:700}
+.d.lag{background:var(--lag-bg);color:var(--lag);font-weight:700}
+.d.por{background:var(--por-bg);color:var(--por);font-weight:700}
+.d.car{background:var(--car-bg);color:var(--car);font-weight:700}
+.d.fer{background:var(--sea);color:var(--sea-ink);font-weight:700}
+.d.fer.por{box-shadow:inset 0 0 0 2px var(--por)}
+.month.ghost{border-style:dashed;background:transparent}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;padding:2px;background:var(--surface);margin-right:6px}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:7px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--sea);color:var(--sea-ink)}
+.d.esc::before{content:"";position:absolute;left:5px;right:5px;bottom:3px;height:4px;border-radius:2px;background:var(--esc)}
+.d.fer.esc::before{background:var(--esc-on)}
+.months.editing .month{border-color:var(--esc)}
+.months.editing .d:not(.we):not(.empty){cursor:cell}
+.esc-banner{justify-content:space-between;background:var(--esc-bg);border-color:var(--esc);margin-top:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.esc-edit{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.d.sel{outline:3px solid var(--esc);outline-offset:-1px;z-index:1}
+.ybar-conf{flex:1 1 100%}
+.lista{min-width:0}
+.plan-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
+.plan{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed;min-width:1080px}
+.plan th{font-size:11px;color:var(--muted);font-weight:700;text-align:center;padding:2px 0}
+.plan th.pwe{color:var(--wknd-ink)}
+.plan .pm{width:96px;text-align:left;font-family:var(--f-display);font-size:13px;color:var(--ink);white-space:nowrap;padding-right:6px}
+.plan .pm .muted{font-size:11px;font-weight:600}
+.plan .pt{width:46px;text-align:center;font-weight:700;color:var(--sea)}
+.plan td{padding:0}
+.plan .d{width:100%;aspect-ratio:1/1;font-size:12px;border-radius:5px}
+.plan .d.esc::before{left:3px;right:3px;bottom:2px;height:3px}
+.plan tr.ghost .d{opacity:.55}
+.plan tfoot th,.plan tfoot td{border-top:1px solid var(--line);padding-top:6px}
+.main.lista-mode{grid-template-columns:minmax(0,1fr)}
+.main.lista-mode .aside-in{position:static;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.main.lista-mode .aside-in>.panel{height:480px;overflow:auto}
+@media (max-width:860px){.main.lista-mode .aside-in{grid-template-columns:minmax(0,1fr)}.main.lista-mode .aside-in>.panel{height:auto;max-height:520px}}
+.mtag{font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;margin-right:4px;white-space:nowrap}
+.mtag.add{background:var(--esc-bg);color:var(--esc)}
+.mtag.rem{background:var(--nac-bg);color:var(--nac)}
+.escform{display:grid;gap:8px;margin-top:10px}
+.escform input[type=date],.escform input[type=text],.panel select{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-width:0;width:100%}
+.esc-sum{background:var(--esc-bg);border-radius:8px;padding:10px;font-size:14px;display:grid;gap:2px}
+.xbtn{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px}
+.d.sug::after{content:"";position:absolute;right:3px;top:3px;width:5px;height:5px;border-radius:50%;background:var(--sea)}
+.d.today{outline:2px solid var(--ink);outline-offset:-2px}
+.d:not(.we):not(.lock):hover{filter:brightness(.95)}
+
+aside{display:flex;flex-direction:column;gap:12px;min-width:0}
+.legend{display:grid;gap:6px;font-size:13px;align-content:start}
+.legend span{display:flex;gap:8px;align-items:center}
+.sw{width:16px;height:16px;border-radius:4px;flex:none}
+.list{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.list li{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;font-size:14px;border-top:1px solid var(--line);padding-top:8px}
+.list li:first-child{border-top:0;padding-top:0}
+.list .when{font-weight:700}
+.list .det{font-size:12.5px;color:var(--muted)}
+.pill{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--sea-soft);color:var(--sea);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill.por{background:var(--por-bg);color:var(--por)}
+textarea{width:100%;min-height:60px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:8px;resize:vertical}
+.note{font-size:13px;color:var(--muted)}
+.empty-state{text-align:center;padding:40px 16px;display:grid;gap:10px;justify-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:10px;font-size:14px;max-width:min(92vw,520px);z-index:20;box-shadow:0 6px 24px rgba(0,0,0,.2)}
+footer{font-size:12px;color:var(--muted);text-align:center}
+details summary{cursor:pointer;font-weight:700;font-family:var(--f-display)}
+.savebar{display:grid;gap:8px;margin-bottom:16px;padding-block:12px}
+.savebar-in{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.savebar h2{font-size:16px}
+.extras{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px;align-items:stretch}
+.extras>.panel{height:480px;overflow:auto;display:flex;flex-direction:column;gap:10px;min-width:0}
+.extras>.panel>h2{flex:none}
+aside{position:relative}
+.main>aside{align-self:stretch}
+.aside-in{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px}
+.aside-in>.legend{flex:none}
+.aside-in>.grow{flex:1 1 0;min-height:0;overflow:auto}
+.esc-panel{display:grid;gap:10px;align-content:start}
+
+@media (max-width:860px){.aside-in{position:static}.aside-in>.grow{flex:none;max-height:520px}}
+@media (max-width:760px){.extras{grid-template-columns:minmax(0,1fr)}}
+.yearbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
+.confirm{background:var(--nac-bg);border-radius:8px;padding:10px;display:grid;gap:8px;font-size:14px}
+
+@media (max-width:1100px){.months{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.months{grid-template-columns:minmax(0,1fr)}.saldo{grid-template-columns:repeat(2,minmax(0,1fr))}.d{font-size:14px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.login{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.login .panel{height:auto;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;padding:28px 22px}
+.login h1{margin:0}
+.login .gbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-size:16px;padding:12px 18px}
+.login .msg{min-height:1.2em;color:var(--nac);font-size:14px}
+.conta{font-size:13px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+</head><body>
+
+<div id="login" class="login" hidden>
+  <div class="panel">
+    <h1>Mapa de Férias</h1>
+    <p class="muted" style="margin:0">Entre com a sua conta Google para ver os mapas.</p>
+    <button class="btn primary gbtn" id="entrar"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3zM12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22zm-5.6-8a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9zM12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6z"/></svg>Entrar com Google</button>
+    <button class="btn small" id="trocar" hidden>Entrar com outra conta</button>
+    <div class="msg" id="loginMsg" role="status"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Mapa de Férias</h1>
+      <div class="where"><span>Trabalho em <b>Lagoa</b></span><span>Residência em <b>Portimão</b></span></div>
+    </div>
+    <div class="row"><button class="btn small" id="tema" aria-label="Mudar tema">Tema escuro</button><span id="status" class="status">A carregar…</span><span id="conta" class="conta" hidden></span><button class="btn small" id="sair" hidden>Sair</button></div>
+  </header>
+
+  <nav class="years" id="years" aria-label="Anos"></nav>
+  <section id="createBox" class="panel create" hidden></section>
+  <div id="app"><div class="panel empty-state"><p class="muted">A carregar os teus mapas…</p></div></div>
+  <footer>Mapa de Férias · jprocha-pt</footer>
+</div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const MES3=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const DOW=["S","T","Q","Q","S","S","D"];
+const DOWN=["segunda","terça","quarta","quinta","sexta","sábado","domingo"];
+const DOW3=["seg","ter","qua","qui","sex","sáb","dom"];
+const LS_KEY="mapa-ferias-jprocha-pt";
+const ANO_INICIAL=2026;
+/* 2026 é o ano base e está sempre presente (os dias vêm da base de dados ou do ficheiro dos mapas) */
+const BASE_2026={ano:2026,direito:22,transitados:0,carnavalLivre:true,notas:"",ferias:[]};
+let baseVerificada=false;
+function garantirBase(){if(anos[ANO_INICIAL])return false;anos[ANO_INICIAL]=norm(clone(BASE_2026));queueSave(ANO_INICIAL);return true}
+
+/* ---------- datas ---------- */
+const pad=n=>String(n).padStart(2,"0");
+const iso=(y,m,d)=>y+"-"+pad(m)+"-"+pad(d);
+const toDate=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c,12)};
+const fromDate=d=>iso(d.getFullYear(),d.getMonth()+1,d.getDate());
+const addDays=(s,n)=>{const d=toDate(s);d.setDate(d.getDate()+n);return fromDate(d)};
+const dow=s=>(toDate(s).getDay()+6)%7;
+const diff=(a,b)=>Math.round((toDate(b)-toDate(a))/864e5);
+const yearOf=s=>+s.slice(0,4);
+const fmt=s=>{const d=toDate(s);return d.getDate()+" "+MES3[d.getMonth()]};
+const fmtLong=s=>{const d=toDate(s);return DOW3[dow(s)]+", "+d.getDate()+" "+MES3[d.getMonth()]};
+const hoje=fromDate(new Date());
+
+function pascoa(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+  mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;
+  return iso(y,mes,dia);
+}
+/* tipo: nac = nacional · lag = municipal Lagoa (local de trabalho, é folga) · por = municipal Portimão (residência, não é folga em Lagoa) · car = Carnaval */
+function feriados(y,carnavalLivre){
+  const p=pascoa(y);
+  const L=[
+    [iso(y,1,1),"Ano Novo","nac"],
+    [addDays(p,-47),"Carnaval","car"],
+    [addDays(p,-2),"Sexta-feira Santa","nac"],
+    [p,"Páscoa","nac"],
+    [iso(y,4,25),"Dia da Liberdade","nac"],
+    [iso(y,5,1),"Dia do Trabalhador","nac"],
+    [addDays(p,60),"Corpo de Deus","nac"],
+    [iso(y,6,10),"Dia de Portugal","nac"],
+    [iso(y,8,15),"Assunção de Nossa Senhora","nac"],
+    [iso(y,9,8),"Dia do Município de Lagoa","lag"],
+    [iso(y,10,5),"Implantação da República","nac"],
+    [iso(y,11,1),"Dia de Todos os Santos","nac"],
+    [iso(y,12,1),"Restauração da Independência","nac"],
+    [iso(y,12,8),"Imaculada Conceição","nac"],
+    [iso(y,12,11),"Dia da Cidade de Portimão","por"],
+    [iso(y,12,25),"Natal","nac"]
+  ];
+  const map=new Map();
+  for(const[d,nome,tipo]of L){
+    const folga=tipo==="por"?false:tipo==="car"?!!carnavalLivre:true;
+    if(!map.has(d)||(map.get(d).tipo==="por"&&folga))map.set(d,{data:d,nome,tipo,folga});
+  }
+  return map;
+}
+const NOME_TIPO={nac:"Feriado nacional",lag:"Feriado municipal de Lagoa — dia livre no trabalho",por:"Feriado de Portimão — em Lagoa é dia de trabalho",car:"Carnaval"};
+
+/* ---------- modelo de um ano ---------- */
+function ctx(m){
+  const fer=feriados(m.ano,m.carnavalLivre);
+  const set=new Set(m.ferias);
+  const isWe=d=>dow(d)>=5;
+  const isFolga=d=>isWe(d)||(fer.get(d)?.folga===true);
+  const isRest=d=>isFolga(d)||set.has(d);
+  return{m,fer,set,isWe,isFolga,isRest};
+}
+function saldo(m){const total=(+m.direito||0)+(+m.transitados||0);const marc=m.ferias.length;return{total,marc,falta:total-marc}}
+
+function periodos(c){
+  const v=[...c.set].sort();const out=[];let cur=null;
+  for(const d of v){
+    if(cur){let ok=true;for(let x=addDays(cur.fim,1);x<d;x=addDays(x,1)){if(!c.isFolga(x)){ok=false;break}}
+      if(ok){cur.fim=d;cur.dias++;continue}}
+    cur={ini:d,fim:d,dias:1};out.push(cur);
+  }
+  for(const p of out){let a=p.ini,b=p.fim;while(c.isFolga(addDays(a,-1))&&!c.set.has(addDays(a,-1))&&diff(addDays(a,-1),p.ini)<20)a=addDays(a,-1);
+    while(c.isFolga(addDays(b,1))&&diff(p.fim,addDays(b,1))<20)b=addDays(b,1);p.restIni=a;p.restFim=b;p.descanso=diff(a,b)+1}
+  return out;
+}
+function restLenWith(c,d){let a=d,b=d;while(c.isRest(addDays(a,-1)))a=addDays(a,-1);while(c.isRest(addDays(b,1)))b=addDays(b,1);return{a,b,n:diff(a,b)+1}}
+function sugestoes(c){
+  const y=c.m.ano,out=[];
+  for(let d=iso(y,1,1);yearOf(d)===y;d=addDays(d,1)){
+    if(c.isFolga(d)||c.set.has(d))continue;
+    const f=c.fer.get(d);
+    const ponte=c.isRest(addDays(d,-1))&&c.isRest(addDays(d,1));
+    const ladoFeriado=[addDays(d,-1),addDays(d,1)].some(x=>c.fer.get(x)?.folga&&!c.isWe(x));
+    if(f&&f.tipo==="por"){const r=restLenWith(c,d);out.push({d,tipo:"por",txt:"Dia da Cidade de Portimão",n:r.n,a:r.a,b:r.b});continue}
+    if(ponte&&ladoFeriado){const r=restLenWith(c,d);if(r.n>=4)out.push({d,tipo:"ponte",txt:"Ponte",n:r.n,a:r.a,b:r.b})}
+  }
+  return out;
+}
+
+/* Propor um ano novo a partir do anterior: mesmas semanas, Páscoa acompanha a Páscoa, dia de Portimão fica no dia de Portimão */
+function propor(prev,ano,carnavalLivre){
+  const pE=pascoa(prev.ano),nE=pascoa(ano);const novo={ano,carnavalLivre,ferias:[]};const c=ctx(novo);const res=new Set();
+  for(const d of prev.ferias){
+    let n;
+    if(d.slice(5)==="12-11"){n=iso(ano,12,11);if(!c.isFolga(n))res.add(n);continue}
+    else if(Math.abs(diff(pE,d))<=10)n=addDays(nE,diff(pE,d));
+    else{n=addDays(d,364);if(yearOf(n)<ano)n=addDays(n,7);if(yearOf(n)>ano)n=addDays(n,-7)}
+    if(yearOf(n)!==ano)continue;
+    let tries=0;while(c.isFolga(n)&&tries<5){n=addDays(n,1);tries++}
+    if(yearOf(n)===ano&&!c.isFolga(n))res.add(n);
+  }
+  return[...res].sort();
+}
+
+/* ---------- estado e gravação ---------- */
+let anos={};let atual=null;let mode="loading";let db=null;let downloads=null;
+const pending=new Map();let inflight=new Set();let showCreate=false;let confirmDel=false;let confirmAct=null;let escSel=null;let importPend=null;
+const clone=o=>JSON.parse(JSON.stringify(o));
+function norm(o){return{ano:+o.ano,direito:o.direito==null?22:+o.direito,transitados:+o.transitados||0,carnavalLivre:o.carnavalLivre!==false,ferias:Array.isArray(o.ferias)?[...new Set(o.ferias.filter(x=>/^\d{4}-\d\d-\d\d$/.test(x)&&yearOf(x)===+o.ano))].sort():[],notas:typeof o.notas==="string"?o.notas:""}}
+
+function setStatus(t,cls){const s=document.getElementById("status");s.textContent=t;s.className="status"+(cls?" "+cls:"")}
+/* ---------- férias da escola (filha) ---------- */
+/* Calendário escolar oficial do continente. Datas = dias sem aulas (inclui fins de semana dentro da pausa). */
+const ESC_OFICIAL={
+  2025:{natal:["2025-12-17","2026-01-04"],carnaval:["2026-02-16","2026-02-18"],pascoa:["2026-03-28","2026-04-12"],fim:{pre1:"2026-06-30",mid:"2026-06-12",early:"2026-06-05"}},
+  2026:{natal:["2026-12-16","2027-01-03"],carnaval:["2027-02-08","2027-02-10"],pascoa:["2027-03-20","2027-04-04"],fim:{pre1:"2027-06-30",mid:"2027-06-11",early:"2027-06-04"},inicio:{basico:"2026-09-11",sec:"2026-09-21"}}
+};
+const ANOS_ESC=["Pré-escolar","1.º ano","2.º ano","3.º ano","4.º ano","5.º ano","6.º ano","7.º ano","8.º ano","9.º ano","10.º ano","11.º ano","12.º ano"];
+const ESC_NOME="Escola";
+let escola={mostrar:true,ano2026:null,local:"portimao",nome:ESC_NOME,extra:[],retirar:[],mais:[],menos:[]};let escEdit=false;let escTimer=null;
+function normEsc(o){o=o||{};return{nome:typeof o.nome==="string"?o.nome.slice(0,120):ESC_NOME,mostrar:o.mostrar!==false,ano2026:(o.ano2026===null||o.ano2026===undefined||o.ano2026==="")?null:Math.max(0,Math.min(12,+o.ano2026)),local:["portimao","lagoa","outro"].includes(o.local)?o.local:"portimao",
+  extra:Array.isArray(o.extra)?o.extra.filter(x=>x&&/^\d{4}-\d\d-\d\d$/.test(x.ini)&&/^\d{4}-\d\d-\d\d$/.test(x.fim)).map(x=>({ini:x.ini<=x.fim?x.ini:x.fim,fim:x.ini<=x.fim?x.fim:x.ini,nome:String(x.nome||"Sem aulas").slice(0,60)})):[],
+  retirar:Array.isArray(o.retirar)?o.retirar.filter(x=>x&&/^\d{4}-\d\d-\d\d$/.test(x.ini)&&/^\d{4}-\d\d-\d\d$/.test(x.fim)).map(x=>({ini:x.ini<=x.fim?x.ini:x.fim,fim:x.ini<=x.fim?x.fim:x.ini,nome:String(x.nome||"Com aulas").slice(0,60)})):[],
+  mais:Array.isArray(o.mais)?[...new Set(o.mais.filter(d=>/^\d{4}-\d\d-\d\d$/.test(d)))].sort():[],
+  menos:Array.isArray(o.menos)?[...new Set(o.menos.filter(d=>/^\d{4}-\d\d-\d\d$/.test(d)))].sort():[]}}
+const gradeIn=S=>escola.ano2026+(S-2026);
+const catFim=g=>g<=4?"pre1":[9,11,12].includes(g)?"early":"mid";
+function semAulas(y){
+  const map=new Map();if(escola.ano2026===null)return{map,estimado:false,semDados:false};
+  let estimado=false,semDados=false;
+  const add=(a,b,n)=>{for(let d=a;d<=b;d=addDays(d,1))if(yearOf(d)===y&&!map.has(d))map.set(d,n)};
+  for(const x of escola.extra)add(x.ini,x.fim,x.nome);
+  for(const S of[y-1,y]){const C=ESC_OFICIAL[S];const g=gradeIn(S);if(g>12||!C)continue;
+    add(C.natal[0],C.natal[1],"Férias do Natal");add(C.carnaval[0],C.carnaval[1],"Férias do Carnaval");add(C.pascoa[0],C.pascoa[1],"Férias da Páscoa")}
+  const gPrev=gradeIn(y-1),gNow=gradeIn(y);
+  if(gPrev<=12){const P=ESC_OFICIAL[y-1];
+    if(P){const ini=addDays(P.fim[catFim(gPrev)],1);let fim;const N=ESC_OFICIAL[y];
+      if(gNow>12)fim=iso(y,12,31);else if(N&&N.inicio)fim=addDays(gNow>=10?N.inicio.sec:N.inicio.basico,-1);else{fim=iso(y,9,10);estimado=true}
+      add(ini,fim,"Férias de verão"+(estimado?" (fim estimado)":""))}
+    else semDados=true}
+  if(!ESC_OFICIAL[y]&&gNow<=12)semDados=true;
+  if(escola.local!=="outro"&&gNow<=12){const d=escola.local==="portimao"?iso(y,12,11):iso(y,9,8);add(d,d,escola.local==="portimao"?"Feriado municipal de Portimão":"Feriado municipal de Lagoa")}
+  for(const x of escola.retirar)for(let d=x.ini;d<=x.fim;d=addDays(d,1))map.delete(d);
+  for(const d of escola.mais)if(yearOf(d)===y&&!map.has(d))map.set(d,"Acrescentado à mão");
+  for(const d of escola.menos)map.delete(d);
+  return{map,estimado,semDados};
+}
+function blocos(map){const ds=[...map.keys()].sort();const out=[];for(const d of ds){const l=out[out.length-1];if(l&&addDays(l.fim,1)===d&&l.nome===map.get(d))l.fim=d;else out.push({ini:d,fim:d,nome:map.get(d)})}return out}
+function lsLoadEsc(){try{return normEsc(JSON.parse(localStorage.getItem(LS_KEY+"-escola")||"{}"))}catch(e){return normEsc({})}}
+function saveEsc(){
+  if(mode==="local"){try{localStorage.setItem(LS_KEY+"-escola",JSON.stringify(escola));setStatus("Guardado neste navegador","ok")}catch(e){setStatus("Não foi possível guardar","err")}return}
+  if(mode!=="db")return;clearTimeout(escTimer);setStatus("A guardar…");
+  escTimer=setTimeout(async()=>{escTimer="voo";try{await db.doc("config/escola").set(clone(escola));setStatus("Guardado","ok")}catch(e){setStatus("Erro ao guardar — tenta de novo","err")}finally{escTimer=null}},500);
+}
+function lsLoad(){try{const r=JSON.parse(localStorage.getItem(LS_KEY)||"{}");const o={};for(const k in r)if(+k>=ANO_INICIAL)o[k]=norm(r[k]);return o}catch(e){return{}}}
+function lsSave(){try{localStorage.setItem(LS_KEY,JSON.stringify(anos));return true}catch(e){return false}}
+
+function queueSave(ano){
+  if(mode==="local"){setStatus(lsSave()?"Guardado neste navegador":"Não foi possível guardar",lsSave()?"ok":"err");return}
+  if(mode!=="db")return;
+  clearTimeout(pending.get(ano));pending.set(ano,setTimeout(()=>flush(ano),500));setStatus("A guardar…");
+}
+async function flush(ano){
+  if(inflight.has(ano)){pending.set(ano,setTimeout(()=>flush(ano),300));return}
+  pending.delete(ano);inflight.add(ano);
+  try{const m=anos[ano];
+    if(m)await db.doc("mapas/"+ano).set({...clone(m),atualizado:new Date().toISOString()});
+    else await db.doc("mapas/"+ano).delete();
+    setStatus("Guardado","ok");
+  }catch(e){setStatus("Erro ao guardar — tenta de novo","err");toast("Não foi possível guardar ("+(e&&e.code||"erro")+"). Verifica a ligação e volta a tentar.")}
+  finally{inflight.delete(ano)}
+}
+
+/* ---------- Firebase: entrada com Google + dados no Firestore ---------- */
+let fbAuth=null,unsubs=[];
+function fbPronto(){const c=window.FIREBASE_CONFIG;return !!(window.firebase&&c&&c.apiKey&&c.apiKey!=="COLAR_AQUI")}
+function mostrarLogin(msg,comTrocar){const L=document.getElementById("login");L.hidden=false;document.getElementById("loginMsg").textContent=msg||"";document.getElementById("trocar").hidden=!comTrocar}
+async function entrarGoogle(trocar){
+  const p=new firebase.auth.GoogleAuthProvider();if(trocar)p.setCustomParameters({prompt:"select_account"});
+  document.getElementById("loginMsg").textContent="";
+  try{await fbAuth.signInWithPopup(p)}
+  catch(e){
+    if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")){try{await fbAuth.signInWithRedirect(p)}catch(e2){mostrarLogin("Não foi possível entrar ("+(e2.code||"erro")+").")}}
+    else if(e&&e.code==="auth/unauthorized-domain")mostrarLogin("Este endereço ainda não está autorizado no Firebase (Authentication > Definições > Domínios autorizados).");
+    else if(!(e&&(e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request")))mostrarLogin("Não foi possível entrar ("+(e&&e.code||"erro")+").");
+  }
+}
+function semAcesso(){
+  const u=fbAuth&&fbAuth.currentUser;const em=u&&u.email||"esta conta";
+  unsubs.forEach(f=>{try{f()}catch(e){}});unsubs=[];
+  fbAuth.signOut().finally(()=>mostrarLogin("A conta "+em+" não tem acesso a este mapa. Entre com uma conta autorizada.",true));
+}
+function initFirebase(){
+  try{firebase.initializeApp(window.FIREBASE_CONFIG)}catch(e){}
+  fbAuth=firebase.auth();
+  document.getElementById("entrar").onclick=()=>entrarGoogle(false);
+  document.getElementById("trocar").onclick=()=>entrarGoogle(true);
+  document.getElementById("sair").onclick=()=>{fbAuth.signOut().then(()=>location.reload())};
+  fbAuth.getRedirectResult().catch(e=>{if(e&&e.code==="auth/unauthorized-domain")mostrarLogin("Este endereço ainda não está autorizado no Firebase.")});
+  let iniciado=false;
+  fbAuth.onAuthStateChanged(u=>{
+    if(!u){if(!iniciado)mostrarLogin("");setStatus("Sem sessão");return}
+    if(iniciado)return;iniciado=true;
+    document.getElementById("login").hidden=true;
+    const c=document.getElementById("conta");c.textContent=u.email||"";c.title=u.email||"";c.hidden=false;document.getElementById("sair").hidden=false;
+    db=firebase.firestore();iniciarBase();
+  });
+}
+
+async function init(){
+  if(fbPronto()){initFirebase();return}
+  if(window.firebase&&!window.claude){mostrarLogin("Falta colar a configuração do Firebase no ficheiro (procure COLAR_AQUI).");return}
+  try{db=window.claude?await window.claude.use("db"):null}catch(e){db=null}
+  try{downloads=window.claude?await window.claude.use("downloads"):null}catch(e){downloads=null}
+  if(db){iniciarBase()}else{
+    mode="local";anos=lsLoad();escola=lsLoadEsc();if(garantirBase())setTimeout(()=>toast("Repus o mapa de 2026 com os teus 22 dias."),300);atual=pickYear();setStatus("Guardado só neste navegador");render();
+  }
+}
+function iniciarBase(){
+    mode="db";
+    unsubs.push(db.collection("mapas").onSnapshot(snap=>{
+      const novo={};
+      for(const doc of snap.docs){const d=doc.data();if(d)novo[doc.id]=norm(d)}
+      for(const k of Object.keys(anos))if(pending.has(+k)||inflight.has(+k))novo[k]=anos[k];
+      for(const k of Object.keys(novo))if(pending.has(+k)||inflight.has(+k))novo[k]=anos[k]||novo[k];
+      for(const k of [...pending.keys()])if(!anos[k])delete novo[k];
+      anos=novo;
+      if(!snap.metadata.hasPendingWrites&&!pending.size)setStatus("Guardado","ok");
+      if(!baseVerificada&&!snap.metadata.fromCache){baseVerificada=true;if(garantirBase())toast("Repus o mapa de 2026.")}
+      if(!atual||!anos[atual])atual=pickYear();
+      render();
+    },e=>{if(e&&e.code==="permission-denied"&&fbAuth){semAcesso();return}setStatus("Sem ligação aos dados","err");toast("Perdi a ligação aos dados. Recarrega a página.")}));
+    unsubs.push(db.doc("config/escola").onSnapshot(s=>{if(escTimer)return;escola=normEsc(s.exists?s.data():{});render()},()=>{}));
+}
+function pickYear(){const ys=Object.keys(anos).map(Number).sort((a,b)=>a-b);if(!ys.length)return null;const y=new Date().getFullYear();return ys.includes(y)?y:ys[ys.length-1]}
+
+/* ---------- interface ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let toastT;function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,3600)}
+
+function render(){renderYears();renderCreate();renderApp()}
+let vista=(()=>{try{return localStorage.getItem(LS_KEY+"-vista")==="letivo"?"letivo":"civil"}catch(e){return"civil"}})();
+let letivo=(()=>{const d=new Date();return Math.max(ANO_INICIAL,d.getMonth()>=8?d.getFullYear():d.getFullYear()-1)})();
+let modo=(()=>{try{return localStorage.getItem(LS_KEY+"-modo")==="lista"?"lista":"cal"}catch(e){return"cal"}})();
+function setModo(v){modo=v;try{localStorage.setItem(LS_KEY+"-modo",v)}catch(e){}render()}
+const TIPO_CHIP={nac:["Feriado nacional","nac"],lag:["Feriado de Lagoa","lag"],por:["Feriado de Portimão · dia de trabalho","por"],car:["Carnaval","car"]};
+function listaHTML(meses,cFor,escMap,comAno){
+  /* Como a folha de Excel: uma linha por mês, dias alinhados pelo dia da semana (37 colunas, a começar à segunda) */
+  const showEsc=escola.mostrar&&escola.ano2026!==null;let tot=0;
+  let h=`<div class="plan-wrap"><table class="plan"><thead><tr><th class="pm">Mês</th>${Array.from({length:37},(_,j)=>`<th class="${j%7>=5?"pwe":""}" title="${DOWN[j%7]}">${DOW[j%7]}</th>`).join("")}<th class="pt">Total</th></tr></thead><tbody>`;
+  for(const[y,mo]of meses){
+    const c=cFor(y);const off=dow(iso(y,mo,1));const nd=new Date(y,mo,0).getDate();let n=0;
+    h+=`<tr${c.m.ghost?' class="ghost"':""}><th class="pm">${MESES[mo-1]}${comAno?` <span class="muted">${y}</span>`:""}</th>`;
+    for(let j=0;j<37;j++){const d=j-off+1;
+      if(d<1||d>nd){h+=`<td class="pe"></td>`;continue}
+      const k=iso(y,mo,d);const f=c.fer.get(k);const we=c.isWe(k);const fe=c.set.has(k);if(fe)n++;
+      const cls=["d"];if(we)cls.push("we");if(f)cls.push(f.tipo);if(fe)cls.push("fer");if(c.isFolga(k))cls.push("lock");if(k===hoje)cls.push("today");
+      const en=showEsc&&!we?escMap.get(k):null;if(en)cls.push("esc");
+      const lab=fmtLong(k)+" "+y+(f?" — "+f.nome:"")+(fe?" — férias":"")+(en?" — filha sem aulas ("+en+")":"");
+      h+=`<td><button class="${cls.join(" ")}" data-d="${k}" title="${esc(lab)}" aria-label="${esc(lab)}" aria-pressed="${fe}">${d}</button></td>`;}
+    tot+=n;h+=`<td class="pt num">${c.m.ghost?"—":n}</td></tr>`;
+  }
+  h+=`</tbody><tfoot><tr><th class="pm">Total</th><td colspan="37"></td><td class="pt num"><b>${tot}</b></td></tr></tfoot></table></div>`;
+  return h;
+}
+function setVista(v){vista=v;try{localStorage.setItem(LS_KEY+"-vista",v)}catch(e){}confirmAct=null;render()}
+function renderYears(){
+  const ys=Object.keys(anos).map(Number).sort((a,b)=>a-b);const next=nextYear();
+  const seg=`<div class="seg" role="group" aria-label="Vista"><button id="vCivil" aria-pressed="${vista==="civil"}">Ano civil</button><button id="vLetivo" aria-pressed="${vista==="letivo"}">Ano letivo</button></div>`;
+  let tabs;
+  if(vista==="letivo"&&ys.length){const Ss=[];if(letivo<ANO_INICIAL)letivo=ANO_INICIAL;for(let S=Math.max(ANO_INICIAL,ys[0]-1);S<=Math.max(ANO_INICIAL,ys[ys.length-1]);S++)Ss.push(S);if(!Ss.includes(letivo))Ss.push(letivo);Ss.sort((a,b)=>a-b);
+    tabs=Ss.map(S=>`<button class="ytab" data-sl="${S}" aria-current="${S===letivo}">${S}/${String(S+1).slice(2)}</button>`).join("");}
+  else tabs=ys.map(y=>`<button class="ytab" data-y="${y}" aria-current="${y===atual}">${y}</button>`).join("");
+  const m=anos[atual];const civ=vista==="civil"&&m;
+  let acts=`<button class="ynew" id="btnNew">+ Criar mapa de ${next}</button>`;
+  if(civ)acts+=`${m.ano>ANO_INICIAL?`<button class="btn danger small" id="delAsk">Apagar mapa de ${m.ano}</button>`:""}<button class="btn small" id="limparAsk">Limpar férias de ${m.ano}</button>`;
+  if(escola.ano2026!==null)acts+=`<button class="btn small" id="resetAsk">Repor calendário escolar</button>`;
+  let conf="";
+  if(confirmAct==="del"&&m)conf=`<div class="confirm ybar-conf"><span>Apagar o mapa de ${m.ano} com ${m.ferias.length} dias marcados? Não dá para desfazer.</span><div class="row"><button class="btn danger" id="delYes">Sim, apagar ${m.ano}</button><button class="btn" id="confNo">Cancelar</button></div></div>`;
+  if(confirmAct==="limpar"&&m)conf=`<div class="confirm ybar-conf"><span>Desmarcar os ${m.ferias.length} dias de férias de ${m.ano}? O mapa e os ajustes ficam; só os dias marcados são apagados.</span><div class="row"><button class="btn danger" id="limparYes">Sim, limpar</button><button class="btn" id="confNo">Cancelar</button></div></div>`;
+  if(confirmAct==="reset"){const n=escola.mais.length+escola.menos.length+escola.extra.length+escola.retirar.length;conf=`<div class="confirm ybar-conf"><span>${n?`Apagar todas as alterações feitas à mão nos dias da escola (${n})? Fica só o calendário escolar oficial.`:"Não há alterações feitas à mão: o calendário escolar já está como o oficial."}</span><div class="row">${n?`<button class="btn danger" id="resetYes">Sim, repor</button>`:""}<button class="btn" id="confNo">${n?"Cancelar":"Fechar"}</button></div></div>`}
+  const seg2=`<div class="seg" role="group" aria-label="Mostrar como"><button id="mCal" aria-pressed="${modo==="cal"}">Calendário</button><button id="mLista" aria-pressed="${modo==="lista"}">Lista</button></div>`;
+  $("#years").innerHTML=seg+seg2+tabs+acts+conf;
+}
+function autoCreate(y){
+  if(anos[y]||y<ANO_INICIAL)return false;const prev=anos[y-1];const s=prev?saldo(prev):null;
+  anos[y]=norm({ano:y,direito:prev?prev.direito:22,transitados:s?Math.max(0,s.falta):0,carnavalLivre:prev?prev.carnavalLivre:true,ferias:[],notas:""});
+  queueSave(y);toast(`Criei o mapa de ${y} (em branco, ${anos[y].direito} dias).`);return true;
+}
+function nextYear(){const ys=Object.keys(anos).map(Number);return ys.length?Math.max(...ys)+1:Math.max(ANO_INICIAL,new Date().getFullYear())}
+function renderCreate(){
+  const box=$("#createBox");box.hidden=!showCreate;if(!showCreate)return;
+  const y=nextYear();const prev=anos[y-1];const s=prev?saldo(prev):null;const sobra=s?Math.max(0,s.falta):0;
+  box.innerHTML=`<h2>Criar mapa de ${y}</h2>
+   <p class="note">Os feriados de ${y} são calculados automaticamente: nacionais, Páscoa, Corpo de Deus, Lagoa (8 de setembro) e Portimão (11 de dezembro).</p>
+   ${prev?`<div class="opts">
+     <label class="opt"><input type="radio" name="base" value="prev" id="baseprev" checked><span><b>Partir de ${y-1}</b><br><span class="note">Propõe as mesmas semanas de ${y-1}, ajustadas aos dias da semana e à Páscoa de ${y}. Depois mudas o que quiseres.</span></span></label>
+     <label class="opt"><input type="radio" name="base" value="vazio" id="basevazio"><span><b>Em branco</b><br><span class="note">Só os feriados; marcas tudo de novo.</span></span></label>
+   </div>`:""}
+   <div class="fields">
+     <label class="field">Dias de férias por ano<input type="number" id="cDireito" min="0" max="60" value="${prev?prev.direito:22}"></label>
+     <label class="field">Dias que passam de ${y-1}<input type="number" id="cTrans" min="0" max="60" value="${sobra}"></label>
+   </div>
+   ${s?`<p class="note">Em ${y-1} ficaram <b class="num">${sobra}</b> dia(s) por gozar.</p>`:""}
+   <label class="check"><input type="checkbox" id="cCarn" ${prev?(prev.carnavalLivre?"checked":""):"checked"}> O Carnaval é dia livre na empresa</label>
+   <div class="row"><button class="btn primary" id="cOk">Criar ${y}</button><button class="btn" id="cCancel">Cancelar</button></div>`;
+}
+
+function ghost(y){const p=anos[y-1]||anos[y+1];return{ano:y,direito:p?p.direito:22,transitados:0,carnavalLivre:p?p.carnavalLivre:true,ferias:[],notas:"",ghost:true}}
+const mapFor=y=>anos[y]||ghost(y);
+const escOn=()=>escola.mostrar&&escola.ano2026!==null;
+
+function monthCard(y,mo,c,sugSet,escMap,comAno){
+  const m=c.m;const off=dow(iso(y,mo,1));const nd=new Date(y,mo,0).getDate();
+  const cnt=m.ferias.filter(d=>+d.slice(5,7)===mo).length;
+  let h=`<section class="month${m.ghost?" ghost":""}"><div class="mhead"><h3>${MESES[mo-1]}${comAno?` <span class="muted" style="font-weight:600">${y}</span>`:""}</h3><span class="c">${m.ghost?"sem mapa":cnt?`<b>${cnt}</b> dia${cnt>1?"s":""}`:""}</span></div><div class="grid">`;
+  h+=DOW.map((x,i)=>`<span class="dow" title="${DOWN[i]}">${x}</span>`).join("");
+  for(let i=0;i<off;i++)h+=`<span class="d empty"></span>`;
+  for(let d=1;d<=nd;d++){
+    const k=iso(y,mo,d);const f=c.fer.get(k);const we=c.isWe(k);const fe=c.set.has(k);
+    const cls=["d"];if(we)cls.push("we");if(f)cls.push(f.tipo);if(fe)cls.push("fer");if(c.isFolga(k))cls.push("lock");if(sugSet.has(k)&&!fe)cls.push("sug");if(k===hoje)cls.push("today");if(escEdit&&escSel&&k>=escSel.ini&&k<=escSel.fim&&!we)cls.push("sel");
+    const en=escola.mostrar&&!we?escMap.get(k):null;if(en)cls.push("esc");
+    const lab=fmtLong(k)+(f?" — "+f.nome:"")+(fe?" — férias":"")+(en?" — filha sem aulas ("+en+")":"")+(sugSet.has(k)&&!fe?" — sugestão":"");
+    h+=`<button class="${cls.join(" ")}" data-d="${k}" title="${esc(lab)}" aria-label="${esc(lab)}" aria-pressed="${fe}">${d}</button>`;
+  }
+  return h+`</div></section>`;
+}
+function legendHTML(carnavalLivre){
+  return`<div class="panel legend"><h2>Legenda</h2>
+      <span><i class="sw" style="background:var(--sea)"></i>Férias</span>
+      <span><i class="sw" style="background:var(--nac-bg);box-shadow:inset 0 0 0 2px var(--nac)"></i>Feriado nacional</span>
+      <span><i class="sw" style="background:var(--lag-bg);box-shadow:inset 0 0 0 2px var(--lag)"></i>Lagoa, 8 set · dia livre no trabalho</span>
+      <span><i class="sw" style="background:var(--por-bg);box-shadow:inset 0 0 0 2px var(--por)"></i>Portimão, 11 dez · trabalhas em Lagoa</span>
+      <span><i class="sw" style="background:var(--car-bg);box-shadow:inset 0 0 0 2px var(--car)"></i>Carnaval ${carnavalLivre?"· dia livre":"· dia de trabalho"}</span>
+      <span><i class="sw" style="background:var(--wknd)"></i>Fim de semana</span>
+      ${escOn()?`<span><i class="sw" style="background:linear-gradient(to top,var(--esc) 0 4px,var(--soft) 4px)"></i>Filha sem aulas (barra verde)</span>`:""}
+      <p class="note" style="margin:4px 0 0">Toca num dia útil para marcar ou desmarcar férias. O ponto azul indica uma ponte que compensa.</p>
+    </div>`;
+}
+function periodsHTML(titulo,list,has,escMap){
+  return`<div class="panel grow"><h2>${titulo}</h2>${list.length?`<ul class="list" style="margin-top:10px">${list.map(p=>`<li><div><div class="when">${p.ini===p.fim?fmtLong(p.ini):fmt(p.ini)+" – "+fmt(p.fim)}</div><div class="det">${p.descanso} dias seguidos de descanso (${fmt(p.restIni)} a ${fmt(p.restFim)})</div>${escOn()?(()=>{let n=0;for(let d=p.ini;d<=p.fim;d=addDays(d,1))if(has(d)&&escMap.has(d))n++;return`<div class="det" style="color:var(--esc)">${n?`${n} de ${p.dias} dias com a filha sem aulas`:"A filha tem aulas nestes dias"}</div>`})():""}</div><span class="pill">${p.dias} d</span></li>`).join("")}</ul>`:`<p class="note">Ainda não marcaste férias neste período.</p>`}</div>`;
+}
+function saveHTML(excelYears){
+  return`<div class="panel savebar"><div class="savebar-in">
+      <h2>Guardar e levar para outro PC</h2>
+      <div class="row">
+        ${canSave()?`<button class="btn primary small" id="json">Guardar ficheiro dos mapas</button>`:""}
+        <label class="btn small" for="imp">Abrir ficheiro dos mapas</label><input type="file" id="imp" accept=".json,application/json" hidden>
+        ${canSave()?excelYears.map(y=>`<button class="btn small" data-xls="${y}">Exportar Excel de ${y}</button>`).join(""):""}
+      </div></div>
+      <p class="note" style="margin:0">${canSave()?"O ficheiro dos mapas (.json) leva todos os anos: no outro PC, abre esta app e carrega em <b>Abrir ficheiro dos mapas</b>. ":"Guardar ficheiros não está disponível nesta vista. Abre a app no Claude. "}${mode==="db"?"Também podes abrir este mesmo link noutro PC com a tua conta Google: os mapas aparecem lá sozinhos.":"Nesta versão os mapas ficam só neste navegador: guarda o ficheiro sempre que fizeres alterações."}</p>
+      ${importPend?`<div class="confirm"><span>Abrir os anos ${Object.keys(importPend).join(", ")} deste ficheiro? Se já existirem aqui, são substituídos.</span><div class="row"><button class="btn danger" id="impYes">Abrir</button><button class="btn" id="impNo">Cancelar</button></div></div>`:""}
+    </div>`;
+}
+function pontesHTML(sug){
+  return`<div class="panel"><h2>Pontes e dias a aproveitar</h2>${sug.length?`<ul class="list" style="margin-top:10px">${sug.map(x=>`<li><div><div class="when">${fmtLong(x.d)} ${yearOf(x.d)}</div><div class="det">${x.tipo==="por"?"Feriado em Portimão, mas trabalhas em Lagoa. ":""}1 dia de férias dá ${x.n} dia${x.n>1?"s":""} seguidos (${fmt(x.a)} a ${fmt(x.b)})</div></div><button class="btn small" data-add="${x.d}">Marcar</button></li>`).join("")}</ul>`:`<p class="note">Não há mais pontes por aproveitar.</p>`}</div>`;
+}
+function feriadosHTML(titulo,fers,carnavalLivreDe){
+  return`<div class="panel"><h2>${titulo}</h2><ul class="list" style="margin-top:10px">${fers.map(f=>`<li><div><div class="when">${fmtLong(f.data)} ${yearOf(f.data)}</div><div class="det">${esc(f.nome)}</div></div>${f.tipo==="lag"?`<span class="pill" style="background:var(--lag-bg);color:var(--lag)">Lagoa</span>`:f.tipo==="por"?`<span class="pill por">Portimão</span>`:f.tipo==="car"?`<span class="pill" style="background:var(--car-bg);color:var(--car)">${f.folga?"livre":"trabalho"}</span>`:""}</li>`).join("")}</ul></div>`;
+}
+
+function renderApp(){
+  const app=$("#app");
+  if(!atual||!anos[atual]){
+    app.innerHTML=`<div class="panel empty-state"><h2>Ainda não há mapas</h2><p class="muted">Cria o mapa do ano para começares a marcar as férias.</p><button class="btn primary" id="btnNew2">Criar mapa de ${nextYear()}</button></div>`;return;
+  }
+  if(vista==="letivo"){renderLetivo();return}
+  const m=anos[atual];const c=ctx(m);const s=saldo(m);const per=periodos(c);const sug=sugestoes(c);const escInfo=semAulas(m.ano);const escMap=escInfo.map;const sugSet=new Set(sug.map(x=>x.d));
+  const pct=s.total?Math.min(100,s.marc/s.total*100):0;
+  const futuras=m.ferias.filter(d=>d>=hoje).length;
+  let html=`${saveHTML([m.ano])}<div class="yearbar"><h2>Mapa de ${m.ano}</h2></div>
+  <div class="saldo" aria-label="Saldo de ${m.ano}">
+    <div><span class="k">Direito ${m.ano}</span><span class="v num">${m.direito}</span></div>
+    <div><span class="k">Vêm de ${m.ano-1}</span><span class="v num">${m.transitados}</span></div>
+    <div><span class="k">Marcados</span><span class="v sea num">${s.marc}</span>${yearOf(hoje)===m.ano?`<span class="note num">${s.marc-futuras} gozados · ${futuras} por gozar</span>`:""}</div>
+    <div><span class="k">${s.falta<0?"A mais":"Por marcar"}</span><span class="v num ${s.falta<0?"warn":""}">${Math.abs(s.falta)}</span></div>
+    <div class="bar"><i style="width:${pct}%"></i></div></div>
+  ${escBanner()}<div class="main${modo==="lista"?" lista-mode":""}" style="margin-top:18px"><div class="${modo==="lista"?"lista":"months"}${escEdit?" editing":""}">`;
+  if(modo==="lista")html+=listaHTML([1,2,3,4,5,6,7,8,9,10,11,12].map(mo=>[m.ano,mo]),()=>c,escMap,false);
+  else for(let mo=1;mo<=12;mo++)html+=monthCard(m.ano,mo,c,sugSet,escMap,false);
+  const g=escola.ano2026===null?0:gradeIn(m.ano);
+  html+=`</div><aside><div class="aside-in">${legendHTML(m.carnavalLivre)}
+    ${periodsHTML("Períodos de "+m.ano,per,d=>c.set.has(d),escMap)}
+    ${escPanel({titulo:"em "+m.ano,isFolga:c.isFolga,has:d=>c.set.has(d),escMap,semDados:escInfo.semDados,terminou:g>12})}
+  </div></aside></div>`;
+  const ajHTML=`<div class="panel"><h2>Ajustes de ${m.ano}</h2>
+      <div style="display:grid;gap:12px;margin-top:12px">
+        <div class="fields"><label class="field">Dias de férias por ano<input type="number" id="aDireito" min="0" max="60" value="${m.direito}"></label>
+        <label class="field">Dias que vêm de ${m.ano-1}<input type="number" id="aTrans" min="0" max="60" value="${m.transitados}"></label></div>
+        <label class="check"><input type="checkbox" id="aCarn" ${m.carnavalLivre?"checked":""}> O Carnaval é dia livre na empresa</label>
+        <label class="field">Notas<textarea id="aNotas" placeholder="Ex.: férias aprovadas pela chefia a 15 de janeiro">${esc(m.notas)}</textarea></label>
+      </div></div>`;
+  html+=`<div class="extras">${ajHTML}${pontesHTML(sug)}${feriadosHTML("Feriados de "+m.ano,[...c.fer.values()].sort((a,b)=>a.data<b.data?-1:1))}</div>`;
+  app.innerHTML=html;
+}
+
+function renderLetivo(){
+  const S=letivo,Ys=[S,S+1],ini=iso(S,9,1),fim=iso(S+1,8,31);const rot=`${S}/${String(S+1).slice(2)}`;
+  const C={},SUG={},INF={};const escMap=new Map();let semDados=false;
+  for(const y of Ys){C[y]=ctx(mapFor(y));const sg=anos[y]?sugestoes(C[y]):[];SUG[y]=sg;INF[y]=semAulas(y);
+    for(const[d,n]of INF[y].map)if(d>=ini&&d<=fim)escMap.set(d,n)}
+  if(escola.ano2026!==null&&(!ESC_OFICIAL[S]))semDados=true;
+  const inWin=d=>d>=ini&&d<=fim;const cy=d=>C[yearOf(d)];
+  const sugAll=[...SUG[S],...SUG[S+1]].filter(x=>inWin(x.d));const sugSet=new Set(sugAll.map(x=>x.d));
+  const falta=Ys.filter(y=>!anos[y]);
+  let html=`${saveHTML(Ys.filter(y=>anos[y]))}<div class="yearbar"><div><h2>Ano letivo ${rot}</h2><span class="note">De setembro de ${S} a agosto de ${S+1}</span></div></div>
+  ${falta.length?`<div class="panel row" style="justify-content:space-between;background:var(--sea-soft);border-color:var(--sea-soft);margin-bottom:12px"><span>O mapa de <b>${falta.join(" e ")}</b> ainda não existe. Os meses desse ano aparecem a tracejado; ao marcares um dia, o mapa é criado.</span>${falta.includes(nextYear())?`<button class="btn primary small" id="btnNew">Criar mapa de ${nextYear()}</button>`:""}</div>`:""}
+  <div class="saldo" style="grid-template-columns:repeat(2,minmax(0,1fr))">${Ys.map(y=>{const m=anos[y];if(!m)return`<div><span class="k">Mapa de ${y}</span><span class="v num muted">—</span><span class="note">Ainda não criado</span></div>`;
+    const s=saldo(m);const noLet=m.ferias.filter(inWin).length;return`<div><span class="k">Mapa de ${y}</span><span class="v sea num">${s.marc}</span><span class="note num">marcados · ${s.falta<0?(-s.falta)+" a mais":s.falta+" por marcar"}</span><span class="note num">${noLet} dentro deste ano letivo · <button class="btn small" data-y="${y}" style="padding:2px 8px">Ver ${y}</button></span></div>`}).join("")}</div>
+  ${escBanner()}<div class="main${modo==="lista"?" lista-mode":""}" style="margin-top:18px"><div class="${modo==="lista"?"lista":"months"}${escEdit?" editing":""}">`;
+  const MS=[[S,9],[S,10],[S,11],[S,12],[S+1,1],[S+1,2],[S+1,3],[S+1,4],[S+1,5],[S+1,6],[S+1,7],[S+1,8]];
+  if(modo==="lista")html+=listaHTML(MS,y=>C[y],escMap,true);
+  else for(const[y,mo]of MS)html+=monthCard(y,mo,C[y],sugSet,escMap,true);
+  const per=Ys.flatMap(y=>anos[y]?periodos(C[y]):[]).filter(p=>inWin(p.ini));
+  const g=escola.ano2026===null?0:gradeIn(S);
+  html+=`</div><aside><div class="aside-in">${legendHTML(C[S+1].m.carnavalLivre)}
+    ${periodsHTML("Períodos no ano letivo "+rot,per,d=>cy(d).set.has(d),escMap)}
+    ${escPanel({titulo:"no ano letivo "+rot,isFolga:d=>cy(d).isFolga(d),has:d=>cy(d).set.has(d),escMap,semDados,terminou:g>12,letivo:true})}
+  </div></aside></div>
+  <div class="extras"><div class="panel"><h2>Ajustes</h2><p class="note">Os dias de férias por ano, os dias que passam do ano anterior, o Carnaval e as notas são de cada ano civil.</p><div class="row">${Ys.filter(y=>anos[y]).map(y=>`<button class="btn small" data-y="${y}">Ajustes de ${y}</button>`).join("")}</div></div>
+    ${pontesHTML(sugAll)}${feriadosHTML("Feriados de set "+S+" a ago "+(S+1),Ys.flatMap(y=>[...C[y].fer.values()]).filter(f=>inWin(f.data)).sort((a,b)=>a.data<b.data?-1:1))}</div>`;
+  $("#app").innerHTML=html;
+}
+
+function grp(ds){const out=[];for(const d of [...ds].sort()){const l=out[out.length-1];if(l&&addDays(l.fim,1)===d)l.fim=d;else out.push({ini:d,fim:d})}return out}
+const fmtR=(a,b)=>a===b?fmtLong(a)+" "+yearOf(a):fmt(a)+" "+yearOf(a)+" – "+fmt(b)+" "+yearOf(b);
+function escBanner(){return escEdit&&escola.ano2026!==null?`<div class="panel esc-banner"><b>Editar férias escolares ligado.</b> Toca num dia útil para o pôr ou tirar das férias escolares (barra verde). As tuas férias não mudam enquanto isto estiver ligado.</div>`:""}
+function manualHTML(){
+  const it=[...escola.extra.map((x,i)=>({ini:x.ini,fim:x.fim,txt:x.nome,tipo:"+",del:`data-delx="${i}"`})),
+    ...grp(escola.mais).map(g=>({ini:g.ini,fim:g.fim,txt:"Sem aulas",tipo:"+",del:`data-delm="${g.ini}|${g.fim}"`})),
+    ...escola.retirar.map((x,i)=>({ini:x.ini,fim:x.fim,txt:x.nome,tipo:"−",del:`data-delr="${i}"`})),
+    ...grp(escola.menos).map(g=>({ini:g.ini,fim:g.fim,txt:"Com aulas",tipo:"−",del:`data-deln="${g.ini}|${g.fim}"`}))].sort((a,b)=>a.ini<b.ini?-1:1);
+  if(!it.length)return"";
+  return`<div><h3 style="margin-bottom:6px">Alterações feitas à mão</h3><ul class="list">${it.map(x=>`<li><div><div class="when"><span class="mtag ${x.tipo==="+"?"add":"rem"}">${x.tipo==="+"?"+ sem aulas":"− com aulas"}</span> ${fmtR(x.ini,x.fim)}</div><div class="det">${esc(x.txt)}</div></div><button class="xbtn" ${x.del} aria-label="Desfazer esta alteração" title="Desfazer">×</button></li>`).join("")}</ul></div>`;
+}
+function toggleEsc(d){
+  if(dow(d)>=5){toast("Ao fim de semana não há aulas.");return}
+  const y=yearOf(d);const tem=semAulas(y).map.has(d);
+  const rm=(arr,v)=>{const i=arr.indexOf(v);if(i>=0){arr.splice(i,1);return true}return false};
+  if(tem){if(!rm(escola.mais,d)){escola.menos.push(d);escola.menos.sort()}}
+  else{if(!rm(escola.menos,d)){escola.mais.push(d);escola.mais.sort()}}
+  // se continua igual (ex.: dia vem de um intervalo acrescentado), força pelo lado contrário
+  if(semAulas(y).map.has(d)===tem){if(tem){escola.menos.push(d)}else{rm(escola.menos,d);escola.mais.push(d)}}
+  saveEsc();autoCreate(y);render();toast(fmtLong(d)+(tem?": a tua filha tem aulas.":": a tua filha não tem aulas."));
+}
+function escPanel(o){
+  const sel=`<label class="field">Ano que a tua filha frequenta em 2026/27<select id="eAno"><option value="">— escolher —</option>${ANOS_ESC.map((n,i)=>`<option value="${i}" ${escola.ano2026===i?"selected":""}>${n}</option>`).join("")}</select></label>`;
+  if(escola.ano2026===null)return`<div class="panel grow esc-panel"><h2>Férias da escola</h2><p class="note">Escolhe o ano que a tua filha frequenta para veres no calendário os dias em que ela não tem aulas.</p>${sel}</div>`;
+  const bl=blocos(o.escMap);
+  let uteis=0,juntos=0;for(const d of o.escMap.keys()){if(o.isFolga(d))continue;uteis++;if(o.has(d))juntos++}
+  return`<div class="panel grow esc-panel"><div><h2>Férias da escola</h2>${escola.nome?`<div class="note">${esc(escola.nome)}</div>`:""}</div>
+   <div class="esc-edit"><button class="btn ${escEdit?"primary":""}" id="escEdit" aria-pressed="${escEdit}">Editar</button><span class="note" style="flex:1 1 160px">${escEdit?"Ligado: toca num dia do calendário para o pôr ou tirar das férias escolares. Carrega em Editar outra vez para terminar.":"Carrega em Editar e toca nos dias do calendário para os pôr ou tirar das férias escolares."}</span></div>
+   <label class="check"><input type="checkbox" id="eMostrar" ${escola.mostrar?"checked":""}> Mostrar no calendário</label>
+   ${sel}
+   <label class="field">A escola fica em<select id="eLocal"><option value="portimao" ${escola.local==="portimao"?"selected":""}>Portimão (feriado a 11 dez)</option><option value="lagoa" ${escola.local==="lagoa"?"selected":""}>Lagoa (feriado a 8 set)</option><option value="outro" ${escola.local==="outro"?"selected":""}>Outro concelho</option></select></label>
+   ${o.terminou?`<p class="note">Neste período a tua filha já terminou o 12.º ano.</p>`:`
+   <div class="esc-sum"><span><b class="num">${uteis}</b> dias úteis sem aulas ${o.titulo}</span><span><b class="num">${juntos}</b> coincidem com as tuas férias · <b class="num">${uteis-juntos}</b> estás a trabalhar</span></div>
+   <ul class="list">${bl.map(b=>`<li><div><div class="when">${b.ini===b.fim?fmtLong(b.ini)+" "+yearOf(b.ini):fmt(b.ini)+" "+yearOf(b.ini)+" – "+fmt(b.fim)+" "+yearOf(b.fim)}</div><div class="det">${esc(b.nome)}</div></div></li>`).join("")||`<li class="note">Sem pausas registadas.</li>`}</ul>`}
+   ${o.semDados?`<p class="note">O calendário escolar oficial deste período ainda não foi publicado. Usa o botão Editar para marcar os dias quando a escola os divulgar.</p>`:""}
+   <p class="note">Datas do calendário escolar oficial do continente. Confirma no documento "Organização do Ano Letivo" do agrupamento se há pausas próprias ou semestres, e acerta-as aqui à mão.</p>
+  </div>`;
+}
+
+/* ---------- ações ---------- */
+function toggle(d){
+  const y=yearOf(d);const c0=ctx(mapFor(y));
+  if(c0.isFolga(d)){const f=c0.fer.get(d);toast(f?fmtLong(d)+" — "+f.nome+". Já é dia livre.":fmtLong(d)+" é fim de semana.");return}
+  const criado=autoCreate(y);
+  const m=anos[y];const c=ctx(m);
+  const i=m.ferias.indexOf(d);
+  if(i>=0)m.ferias.splice(i,1);else{m.ferias.push(d);m.ferias.sort();const f=c.fer.get(d);if(f&&f.tipo==="por")toast("Marcado o Dia da Cidade de Portimão.")}
+  const s=saldo(m);if(i<0&&s.falta<0&&!criado)toast("Atenção: já tens "+(-s.falta)+" dia(s) a mais do que o direito em "+y+".");
+  queueSave(y);render();
+}
+function createYear(){
+  const y=nextYear();const prev=anos[y-1];
+  const direito=Math.max(0,+$("#cDireito").value||0),trans=Math.max(0,+$("#cTrans").value||0),carn=$("#cCarn").checked;
+  const usePrev=prev&&document.getElementById("baseprev")?.checked;
+  anos[y]=norm({ano:y,direito,transitados:trans,carnavalLivre:carn,ferias:usePrev?propor(prev,y,carn):[],notas:""});
+  atual=y;showCreate=false;queueSave(y);render();
+  toast(usePrev?`Mapa de ${y} criado com ${anos[y].ferias.length} dias propostos. Ajusta à vontade.`:`Mapa de ${y} criado.`);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function updField(k,v){const m=anos[atual];m[k]=v;if(k==="carnavalLivre"){const c=ctx(m);m.ferias=m.ferias.filter(d=>!c.isFolga(d))}queueSave(atual);window.__ajOpen=true;render()}
+
+const standalone=!window.claude;
+function canSave(){return !!downloads||standalone}
+async function saveFile(filename,data){
+  if(!downloads){
+    if(!standalone)return;
+    const blob=new Blob([data],{type:filename.endsWith(".json")?"application/json":"application/octet-stream"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast("Ficheiro guardado na pasta Transferências.");return;
+  }
+  try{await downloads.save({filename,data});toast("Ficheiro guardado.")}
+  catch(e){if(e&&e.code==="declined")return;toast(e&&e.code==="rate_limited"?"Espera um momento e tenta outra vez.":"Não foi possível descarregar o ficheiro.")}
+}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("load"));document.head.appendChild(s)})}
+
+async function exportXls(ano){
+  const m=anos[ano||atual];if(!m)return;const c=ctx(m);const escXls=escola.mostrar?semAulas(m.ano).map:new Map();
+  try{if(!window.ExcelJS){toast("A preparar o Excel…");await loadScript("https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js")}}
+  catch(e){toast("Não consegui preparar o Excel. Verifica a ligação à internet.");return}
+  const wb=new ExcelJS.Workbook();wb.creator="jprocha-pt";
+  const ws=wb.addWorksheet("Mapa "+m.ano,{views:[{showGridLines:false}]});
+  const FILL={we:"FFE2EFDA",nac:"FFFFC7CE",lag:"FFFFEB9C",por:"FFE4DFEC",car:"FFF2F2F2",fer:"FFFFFF00",head:"FF0A6D8D",tot:"FFC6EFCE"};
+  const fill=(cell,k)=>{cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:FILL[k]}}};
+  const thin={style:"thin",color:{argb:"FFBFC9CF"}};const border={top:thin,left:thin,bottom:thin,right:thin};
+  ws.getColumn(1).width=2;ws.getColumn(2).width=13;for(let j=0;j<37;j++)ws.getColumn(3+j).width=3.8;ws.getColumn(40).width=8;
+  ws.mergeCells(2,2,2,40);const t=ws.getCell(2,2);t.value=`Mapa de Férias ${m.ano} — Lagoa (trabalho) · Portimão (residência)`;t.font={bold:true,size:14};
+  const h=ws.getRow(4);h.getCell(2).value="Mês";for(let j=0;j<37;j++){const cl=h.getCell(3+j);cl.value=DOW[j%7];cl.alignment={horizontal:"center"};cl.font={bold:true,color:{argb:"FFFFFFFF"}};fill(cl,"head")}
+  h.getCell(40).value="Total";h.getCell(40).font={bold:true,color:{argb:"FFFFFFFF"}};fill(h.getCell(40),"head");h.getCell(2).font={bold:true,color:{argb:"FFFFFFFF"}};fill(h.getCell(2),"head");
+  const totCells=[];
+  for(let mo=1;mo<=12;mo++){
+    const rD=5+(mo-1)*2,rM=rD+1;const off=dow(iso(m.ano,mo,1));const nd=new Date(m.ano,mo,0).getDate();
+    ws.mergeCells(rD,2,rM,2);const mc=ws.getCell(rD,2);mc.value=MESES[mo-1];mc.font={bold:true};mc.alignment={vertical:"middle"};
+    let cnt=0;
+    for(let d=1;d<=nd;d++){const k=iso(m.ano,mo,d);const col=3+off+d-1;const cd=ws.getCell(rD,col),cm=ws.getCell(rM,col);
+      cd.value=d;cd.alignment={horizontal:"center"};cd.border=border;cm.border=border;cm.alignment={horizontal:"center"};
+      const f=c.fer.get(k);if(f)fill(cd,f.tipo);else if(c.isWe(k))fill(cd,"we");
+      if(f)cd.note=f.nome;
+      if(escXls.has(k)&&!c.isWe(k))cd.border={...border,bottom:{style:"thick",color:{argb:"FF2A9459"}}};
+      if(c.set.has(k)){cm.value=1;fill(cm,"fer");cnt++}}
+    ws.mergeCells(rD,40,rM,40);const tc=ws.getCell(rD,40);
+    tc.value={formula:`SUM(C${rM}:AM${rM})`,result:cnt};tc.alignment={horizontal:"center",vertical:"middle"};tc.font={bold:true};fill(tc,"tot");totCells.push("AN"+rD);
+  }
+  const s=saldo(m);
+  const rows=[["Total marcado",{formula:totCells.join("+"),result:s.marc}],[`Direito ${m.ano}`,m.direito],[`Vêm de ${m.ano-1}`,m.transitados],["Por marcar",{formula:"AN30+AN31-AN29",result:s.falta}]];
+  rows.forEach((r,i)=>{const rr=29+i;ws.mergeCells(rr,30,rr,39);const l=ws.getCell(rr,30);l.value=r[0];l.alignment={horizontal:"right"};l.font={bold:true};const v=ws.getCell(rr,40);v.value=r[1];v.font={bold:true};v.alignment={horizontal:"center"};fill(v,"tot")});
+  const leg=[["fer","Férias (1 = dia de férias)"],["nac","Feriado nacional"],["lag","Feriado municipal de Lagoa (8 set) — dia livre no trabalho"],["por","Feriado de Portimão (11 dez) — dia de trabalho em Lagoa"],["car",m.carnavalLivre?"Carnaval — dia livre":"Carnaval — dia de trabalho"],["we","Fim de semana"]];
+  leg.forEach((l,i)=>{const r=29+i;fill(ws.getCell(r,2),l[0]);ws.getCell(r,2).border=border;ws.mergeCells(r,3,r,25);ws.getCell(r,3).value=l[1]});
+  if(m.notas){ws.getCell(36,2).value="Notas:";ws.getCell(36,2).font={bold:true};ws.mergeCells(36,3,36,40);ws.getCell(36,3).value=m.notas}
+  const ls=wb.addWorksheet("Lista");ls.columns=[{header:"Data",key:"d",width:12},{header:"Dia",key:"w",width:10},{header:"Tipo",key:"t",width:22},{header:"Descrição",key:"n",width:42}];
+  ls.getRow(1).font={bold:true};
+  if(escXls.size){const r=35;const sw=ws.getCell(r,2);sw.border={...border,bottom:{style:"thick",color:{argb:"FF2A9459"}}};ws.mergeCells(r,3,r,25);ws.getCell(r,3).value="Sublinhado verde — filha sem aulas"}
+  const items=[...[...escXls.entries()].filter(([d])=>!c.isWe(d)&&!c.fer.get(d)).map(([d,n])=>({d,t:"Filha sem aulas",n})),...m.ferias.map(d=>({d,t:"Férias",n:c.fer.get(d)?.nome||""})),...[...c.fer.values()].map(f=>({d:f.data,t:{nac:"Feriado nacional",lag:"Feriado Lagoa",por:"Feriado Portimão",car:"Carnaval"}[f.tipo],n:f.nome}))].sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);
+  for(const it of items){const r=ls.addRow({d:toDate(it.d),w:DOWN[dow(it.d)],t:it.t,n:it.n});r.getCell(1).numFmt="dd/mm/yyyy";if(it.t==="Férias")fill(r.getCell(3),"fer")}
+  const buf=await wb.xlsx.writeBuffer();
+  await saveFile(`Mapa-Ferias-${m.ano}.xlsx`,new Uint8Array(buf));
+}
+function exportJson(){
+  const data={app:"mapa-ferias",autor:"jprocha-pt",versao:2,exportado:new Date().toISOString(),anos,escola};
+  saveFile(`Mapa-Ferias-copia-${fromDate(new Date())}.json`,JSON.stringify(data,null,2));
+}
+function readImport(file){
+  const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);const src=j&&j.anos;if(!src||typeof src!=="object")throw 0;const o={};for(const k in src){const n=norm(src[k]);if(n.ano>=ANO_INICIAL&&n.ano<=2100)o[n.ano]=n}
+      if(!Object.keys(o).length)throw 0;importPend=o;importEsc=j.escola?normEsc(j.escola):null;render()}catch(e){toast("Este ficheiro não é uma cópia de segurança do Mapa de Férias.")}};
+  r.readAsText(file);
+}
+let importEsc=null;
+function applyImport(){if(importEsc){escola=importEsc;importEsc=null;saveEsc()}for(const k in importPend){anos[k]=importPend[k];queueSave(+k)}atual=+Object.keys(importPend).sort().pop();importPend=null;render();toast("Cópia reposta.")}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,[data-y]");if(!t)return;
+  if(t.dataset.y){atual=+t.dataset.y;confirmAct=null;window.__ajOpen=false;if(vista!=="civil")setVista("civil");else render();window.scrollTo({top:0,behavior:"smooth"});return}
+  if(t.dataset.sl){letivo=+t.dataset.sl;render();return}
+  if(t.dataset.xls){exportXls(+t.dataset.xls).catch(()=>toast("Não foi possível criar o Excel."));return}
+  if(t.dataset.d){if(escEdit&&escola.ano2026!==null)toggleEsc(t.dataset.d);else toggle(t.dataset.d);return}
+  if(t.dataset.add){toggle(t.dataset.add);return}
+  if(t.dataset.delx){escola.extra.splice(+t.dataset.delx,1);saveEsc();render();return}
+  if(t.dataset.delr){escola.retirar.splice(+t.dataset.delr,1);saveEsc();render();return}
+  if(t.dataset.delm||t.dataset.deln){const[a,b]=(t.dataset.delm||t.dataset.deln).split("|");const k=t.dataset.delm?"mais":"menos";escola[k]=escola[k].filter(d=>d<a||d>b);saveEsc();render();return}
+  switch(t.id){
+    case"btnNew":case"btnNew2":showCreate=!showCreate||t.id==="btnNew2";render();if(showCreate)$("#createBox").scrollIntoView({behavior:"smooth",block:"nearest"});break;
+    case"cOk":createYear();break;
+    case"cCancel":showCreate=false;render();break;
+    case"delAsk":confirmAct="del";renderYears();break;
+    case"delNo":confirmAct=null;renderYears();break;
+    case"delYes":{const y=atual;if(y<=ANO_INICIAL){confirmAct=null;renderYears();break}delete anos[y];confirmAct=null;atual=pickYear();queueSave(y);render();toast(`Mapa de ${y} apagado.`);break}
+    case"xls":exportXls().catch(()=>toast("Não foi possível criar o Excel."));break;
+    case"json":exportJson();break;
+    case"impYes":applyImport();break;
+    case"impNo":importPend=null;render();break;
+    case"escEdit":case"escEdit2":escEdit=!escEdit;escSel=null;render();break;
+    case"xTog":{const st=xEstado();if(!st){toast("Escolhe primeiro as datas em “De” e “Até”.");$("#xIni").focus();break}const a=$("#xIni").value,b=$("#xFim").value||a;aplicarEsc(a<=b?a:b,a<=b?b:a,!st.semAulas);break}
+    case"selTog":{if(!escSel)break;const st=estadoEsc(escSel.ini,escSel.fim);if(!st.uteis){toast("A seleção só tem fins de semana.");break}aplicarEsc(escSel.ini,escSel.fim,!st.semAulas);break}
+    case"selClear":escSel=null;render();break;
+    case"modoDatas":escEdit=false;escSel=null;render();break;
+    case"modoCal":escEdit=true;escSel=null;render();toast("Toca num dia do calendário para o selecionar.");break;
+    case"limparAsk":confirmAct="limpar";renderYears();break;
+    case"resetAsk":confirmAct="reset";renderYears();break;
+    case"confNo":confirmAct=null;renderYears();break;
+    case"limparYes":{const m=anos[atual];if(m){m.ferias=[];queueSave(atual)}confirmAct=null;render();toast(`Férias de ${atual} limpas.`);break}
+    case"resetYes":{escola.mais=[];escola.menos=[];escola.extra=[];escola.retirar=[];saveEsc();confirmAct=null;render();toast("Calendário escolar reposto: só ficam as datas oficiais.");break}
+    case"vCivil":setVista("civil");break;
+    case"mCal":setModo("cal");break;
+    case"mLista":setModo("lista");break;
+    case"vLetivo":setVista("letivo");break;
+    case"verLetivo":{const y=atual;letivo=y-1;setVista("letivo");window.scrollTo({top:0,behavior:"smooth"});break}
+  }
+});
+function estadoEsc(ini,fim){let tot=0,sem=0;for(let d=ini;d<=fim&&tot<800;d=addDays(d,1)){if(dow(d)>=5)continue;tot++;if(semAulas(yearOf(d)).map.has(d))sem++}return{semAulas:tot>0&&sem===tot,uteis:tot}}
+function aplicarEsc(ini,fim,quer){
+  const rm=(arr,v)=>{const i=arr.indexOf(v);if(i>=0)arr.splice(i,1)};const ys=new Set();
+  for(let d=ini;d<=fim;d=addDays(d,1)){if(dow(d)>=5)continue;ys.add(yearOf(d));
+    if(semAulas(yearOf(d)).map.has(d)===quer)continue;
+    if(quer){rm(escola.menos,d);if(!semAulas(yearOf(d)).map.has(d))escola.mais.push(d)}
+    else{rm(escola.mais,d);if(semAulas(yearOf(d)).map.has(d))escola.menos.push(d)}}
+  escola.mais.sort();escola.menos.sort();saveEsc();
+  const novos=[];for(const y of ys)if(!anos[y]&&y>=2000&&y<=2100){autoCreate(y);novos.push(y)}
+  render();toast((quer?"Marcado: a tua filha não tem aulas ":"Marcado: a tua filha tem aulas ")+(ini===fim?"neste dia.":"nestas datas.")+(novos.length?` Criei o mapa de ${novos.join(" e ")}.`:""));
+}
+function xEstado(){const a=$("#xIni")?.value,b=($("#xFim")?.value)||a;if(!a)return null;const ini=a<=b?a:b,fim=a<=b?b:a;let tot=0,sem=0;
+  for(let d=ini;d<=fim&&tot<800;d=addDays(d,1)){if(dow(d)>=5)continue;tot++;if(semAulas(yearOf(d)).map.has(d))sem++}
+  return{semAulas:tot>0&&sem===tot}}
+function xLabel(){const btn=$("#xTog");if(!btn)return;const st=xEstado();
+  if(!st){btn.textContent="Não tem aulas";btn.className="btn primary";return}
+  btn.textContent=st.semAulas?"Tem aulas":"Não tem aulas";btn.className="btn "+(st.semAulas?"danger":"primary");
+  btn.title=st.semAulas?"Estas datas estão sem aulas: passam a ter aulas":"Estas datas passam a ficar sem aulas";}
+document.addEventListener("input",e=>{if(e.target.id==="xIni"||e.target.id==="xFim")xLabel()});
+document.addEventListener("change",e=>{if(e.target.id==="xIni"||e.target.id==="xFim")xLabel()});
+document.addEventListener("change",e=>{
+  const id=e.target.id;
+  if(id==="aDireito")updField("direito",Math.max(0,+e.target.value||0));
+  else if(id==="aTrans")updField("transitados",Math.max(0,+e.target.value||0));
+  else if(id==="aCarn")updField("carnavalLivre",e.target.checked);
+  else if(id==="aNotas")updField("notas",e.target.value);
+  else if(id==="imp"&&e.target.files[0])readImport(e.target.files[0]);
+  else if(id==="eMostrar"){escola.mostrar=e.target.checked;saveEsc();render()}
+  else if(id==="eAno"){escola.ano2026=e.target.value===""?null:+e.target.value;saveEsc();render()}
+  else if(id==="eLocal"){escola.local=e.target.value;saveEsc();render()}
+});
+document.addEventListener("toggle",e=>{if(e.target.id==="ajustes")window.__ajOpen=e.target.open;if(e.target.id==="xDet")window.__xOpen=e.target.open},true);
+
+function temaAtual(){const t=document.documentElement.getAttribute("data-theme");if(t)return t;return matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
+function temaBtn(){const b=document.getElementById("tema");if(b)b.textContent=temaAtual()==="dark"?"☀ Tema claro":"☾ Tema escuro"}
+try{const t=localStorage.getItem(LS_KEY+"-tema");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}
+temaBtn();try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",temaBtn)}catch(e){}
+document.getElementById("tema").addEventListener("click",()=>{const n=temaAtual()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",n);try{localStorage.setItem(LS_KEY+"-tema",n)}catch(e){}temaBtn()});
+window.__mf={pascoa,feriados,ctx,periodos,sugestoes,propor,saldo};
+init();
+})();
+</script>
+
+</body></html>
