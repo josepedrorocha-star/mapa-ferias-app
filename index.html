@@ -233,6 +233,22 @@ body{padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(40px,
   body{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
   .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
 }
+/* Telemóvel deitado: barra de separadores mais baixa, ícone ao lado do texto */
+@media (max-width:960px) and (max-height:520px) and (orientation:landscape){
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;background:var(--surface);border-bottom:0;border-top:1px solid var(--line);
+    padding:5px max(10px,env(safe-area-inset-left,0px)) calc(5px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-right,0px))}
+  .tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .tabbar button{flex-direction:row;justify-content:center;gap:8px;min-height:42px;padding:6px 8px;border-radius:12px;font-size:14px;font-weight:700}
+  .tabbar svg{width:22px;height:22px}
+  .tabbar button[aria-current="page"]{background:var(--sea-soft);color:var(--sea)}
+  .tabbar button[aria-current="page"]::after{display:none}
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+  .toast{bottom:calc(60px + env(safe-area-inset-bottom,0px))!important}
+  .mjump{display:flex;gap:6px;overflow-x:auto;position:sticky;top:0;z-index:6;margin:0 -16px;padding:6px 16px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+  .mjump button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px}
+  .mjump button.cur{border-color:var(--sea);color:var(--sea)}
+  .mjump button.has{background:var(--sea);color:var(--sea-ink);border-color:var(--sea)}
+}
 .extras.duas{grid-template-columns:repeat(2,minmax(0,1fr))}
 .main.sem-aside{grid-template-columns:minmax(0,1fr)}
 .main.sem-aside .months{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -310,7 +326,7 @@ body{padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(40px,
   <nav class="years" id="years" aria-label="Anos"></nav>
   <section id="createBox" class="panel create" hidden></section>
   <div id="app"><div class="panel empty-state"><p class="muted">A carregar os teus mapas…</p></div></div>
-  <footer>Mapa de Férias · jprocha-pt · <span id="versaoApp">versão 1.0</span> · 2026</footer>
+  <footer>Mapa de Férias · jprocha-pt · <span id="versaoApp">versão 1.1</span> · 2026</footer>
 </div>
 <div id="toast" class="toast" hidden role="status"></div>
 <div id="instAjuda" class="login" hidden role="dialog" aria-modal="true" aria-labelledby="instTit">

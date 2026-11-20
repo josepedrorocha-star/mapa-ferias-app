@@ -2,7 +2,7 @@
    Guarda a app no telemóvel para abrir depressa e mesmo sem rede.
    Os dados (Firebase) não passam por aqui: o próprio Firebase guarda uma cópia local.
    Ao publicar uma nova versão da app, aumente o número da VERSAO. */
-const VERSAO = "mapa-ferias-v1";
+const VERSAO = "mapa-ferias-v2";
 const BASE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
 const EXTERNOS = ["www.gstatic.com", "fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net"];
 
