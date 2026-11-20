@@ -2,6 +2,13 @@
 <html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mapa de Férias</title>
 <meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a6d8d" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d171d" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Mapa de Férias">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -137,7 +144,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .plan tr.ghost .d{opacity:.55}
 .plan tfoot th,.plan tfoot td{border-top:1px solid var(--line);padding-top:6px}
 .main.lista-mode{grid-template-columns:minmax(0,1fr)}
-.main.lista-mode .aside-in{position:static;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.main.lista-mode .aside-in{position:static;display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 .main.lista-mode .aside-in>.panel{height:480px;overflow:auto}
 @media (max-width:860px){.main.lista-mode .aside-in{grid-template-columns:minmax(0,1fr)}.main.lista-mode .aside-in>.panel{height:auto;max-height:520px}}
 .mtag{font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;margin-right:4px;white-space:nowrap}
@@ -169,7 +176,7 @@ textarea{width:100%;min-height:60px;border:1px solid var(--line);border-radius:8
   padding:10px 16px;border-radius:10px;font-size:14px;max-width:min(92vw,520px);z-index:20;box-shadow:0 6px 24px rgba(0,0,0,.2)}
 footer{font-size:12px;color:var(--muted);text-align:center}
 details summary{cursor:pointer;font-weight:700;font-family:var(--f-display)}
-.savebar{display:grid;gap:8px;margin-bottom:16px;padding-block:12px}
+.savebar{display:grid;gap:8px;margin-top:18px;padding-block:12px}
 .savebar-in{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
 .savebar h2{font-size:16px}
 .extras{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px;align-items:stretch}
@@ -197,6 +204,86 @@ aside{position:relative}
 .login .gbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-size:16px;padding:12px 18px}
 .login .msg{min-height:1.2em;color:var(--nac);font-size:14px}
 .conta{font-size:13px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---------- Android / telemóvel ---------- */
+html{-webkit-text-size-adjust:100%}
+button,.btn,label,.d,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body{padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(40px,calc(env(safe-area-inset-bottom,0px) + 24px))}
+.btn.install{background:var(--sea-soft);color:var(--sea);border-color:var(--sea)}
+.mjump{display:none}
+/* Separadores: em cima no computador (como a Gestão de Cuidadoras), barra fixa em baixo no telemóvel */
+.tabbar{border-bottom:1px solid var(--line);margin-top:-4px}
+.tabbar-in{display:flex;gap:6px;flex-wrap:wrap}
+.tabbar button{border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;gap:8px;padding:10px 14px 12px;
+  font-family:var(--f-display);font-weight:600;font-size:19px;cursor:pointer;position:relative;border-radius:8px 8px 0 0}
+.tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tabbar svg circle{fill:currentColor;stroke:none}
+.tabbar button[aria-current="page"]{color:var(--ink);font-weight:700}
+.tabbar button[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--sea)}
+.tabbar button:not([aria-current="page"]):hover{color:var(--ink);background:var(--soft)}
+@media (max-width:860px){
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;background:var(--surface);border-bottom:0;border-top:1px solid var(--line);
+    padding:8px max(10px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-right,0px));box-shadow:0 -4px 18px rgba(0,0,0,.06)}
+  .tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .tabbar button{flex-direction:column;justify-content:center;gap:4px;border-radius:14px;padding:8px 6px 7px;font-size:14px;font-weight:700;min-height:60px}
+  .tabbar button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .tabbar svg{width:26px;height:26px}
+  .tabbar button[aria-current="page"]{background:var(--sea-soft);color:var(--sea)}
+  .tabbar button[aria-current="page"]::after{display:none}
+  .tabbar button:not([aria-current="page"]):hover{background:transparent}
+  body{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
+  .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
+}
+.extras.duas{grid-template-columns:repeat(2,minmax(0,1fr))}
+.main.sem-aside{grid-template-columns:minmax(0,1fr)}
+.main.sem-aside .months{grid-template-columns:repeat(4,minmax(0,1fr))}
+.legenda-baixo{margin-top:12px}
+.legenda-baixo .legend{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));column-gap:20px;row-gap:8px}
+.legenda-baixo .legend>h2,.legenda-baixo .legend>p,.legenda-baixo .legend>.note{grid-column:1/-1}
+@media (max-width:1100px){.main.sem-aside .months{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:860px){.main.sem-aside .months{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.main.sem-aside .months{grid-template-columns:minmax(0,1fr)}}
+.config{margin-top:18px}
+.config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.config-grid>.panel{height:auto;max-height:none;overflow:visible;min-width:0}
+.config-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.config .savebar{margin-top:0}
+.config .savebar-in{justify-content:flex-start}
+@media (max-width:760px){.extras.duas,.config-grid{grid-template-columns:minmax(0,1fr)}}
+.listagem-panel{display:flex;flex-direction:column}
+.listagem-panel .list li{padding-top:10px}
+.listagem-panel .when{font-size:16px}
+@media (min-width:861px){.listagem-panel .list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}.listagem-panel .list li:nth-child(2){border-top:0;padding-top:0}}
+.month{scroll-margin-top:64px}
+@media (display-mode: standalone){footer{padding-bottom:8px}}
+@media (max-width:760px){
+  .extras>.panel{height:auto;overflow:visible}
+  .aside-in>.grow{max-height:none;overflow:visible}
+}
+@media (max-width:560px){
+  body{font-size:16px}
+  header.top{align-items:flex-start}
+  header.top .row{width:100%}
+  .conta{max-width:150px}
+  .btn{min-height:40px}
+  .btn.small{min-height:36px;padding:6px 12px}
+  .seg button{padding:8px 12px}
+  .ytab,.ynew{padding:9px 14px}
+  .grid{gap:4px}
+  .d{border-radius:8px;font-size:15px}
+  .month{padding:12px 10px}
+  .savebar .note{display:none}
+  .savebar-in .row{width:100%}
+  .list li{font-size:15px}
+  .list .det{font-size:13.5px}
+  .seg[aria-label="Mostrar como"]{display:grid;grid-template-columns:1fr 1fr;width:100%;margin-right:0}
+  .seg[aria-label="Vista"]{width:100%;display:grid;grid-template-columns:1fr 1fr;margin-right:0}
+  .mjump{display:flex;gap:6px;overflow-x:auto;position:sticky;top:0;z-index:6;margin:0 -16px;padding:8px 16px;
+    padding-top:max(8px,env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+  .mjump::-webkit-scrollbar{display:none}
+  .mjump button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-weight:700;font-size:14px;min-height:36px}
+  .mjump button.cur{border-color:var(--sea);color:var(--sea)}
+  .mjump button.has{background:var(--sea);color:var(--sea-ink);border-color:var(--sea)}
+}
 </style>
 </head><body>
 
@@ -216,15 +303,28 @@ aside{position:relative}
       <h1>Mapa de Férias</h1>
       <div class="where"><span>Trabalho em <b>Lagoa</b></span><span>Residência em <b>Portimão</b></span></div>
     </div>
-    <div class="row"><button class="btn small" id="tema" aria-label="Mudar tema">Tema escuro</button><span id="status" class="status">A carregar…</span><span id="conta" class="conta" hidden></span><button class="btn small" id="sair" hidden>Sair</button></div>
+    <div class="row"><button class="btn small install" id="instalar" hidden>Instalar app</button><button class="btn small" id="tema" aria-label="Mudar tema">Tema escuro</button><span id="status" class="status">A carregar…</span><span id="conta" class="conta" hidden></span><button class="btn small" id="sair" hidden>Sair</button></div>
   </header>
+  <nav id="tabbar" class="tabbar" aria-label="Secções"></nav>
 
   <nav class="years" id="years" aria-label="Anos"></nav>
   <section id="createBox" class="panel create" hidden></section>
   <div id="app"><div class="panel empty-state"><p class="muted">A carregar os teus mapas…</p></div></div>
-  <footer>Mapa de Férias · jprocha-pt</footer>
+  <footer>Mapa de Férias · jprocha-pt · <span id="versaoApp">versão 1.0</span> · 2026</footer>
 </div>
 <div id="toast" class="toast" hidden role="status"></div>
+<div id="instAjuda" class="login" hidden role="dialog" aria-modal="true" aria-labelledby="instTit">
+  <div class="panel" style="text-align:left">
+    <h2 id="instTit">Instalar no Android</h2>
+    <ol style="margin:0;padding-left:20px;display:grid;gap:8px">
+      <li>Abra esta página no <b>Chrome</b>.</li>
+      <li>Toque no menu <b>⋮</b> (três pontos, em cima à direita).</li>
+      <li>Toque em <b>Instalar app</b> ou <b>Adicionar ao ecrã principal</b>.</li>
+      <li>Confirme. O ícone <b>Mapa de Férias</b> aparece no ecrã do telemóvel.</li>
+    </ol>
+    <button class="btn primary" id="instFechar">Percebi</button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -410,6 +510,46 @@ async function flush(ano){
   finally{inflight.delete(ano)}
 }
 
+/* ---------- Android: instalar, funcionar sem rede, saltar entre meses ---------- */
+const emApp=()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){return false}};
+let pedidoInstalar=null;
+function prepararInstalar(){
+  const b=$("#instalar");if(!b)return;
+  const android=/Android/i.test(navigator.userAgent);
+  const mostrar=()=>{b.hidden=emApp()||!(pedidoInstalar||android)};
+  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();pedidoInstalar=e;mostrar()});
+  window.addEventListener("appinstalled",()=>{pedidoInstalar=null;b.hidden=true;toast("App instalada. Já a encontra no ecrã do telemóvel.")});
+  b.onclick=async()=>{
+    if(pedidoInstalar){const p=pedidoInstalar;pedidoInstalar=null;try{await p.prompt();await p.userChoice}catch(e){}mostrar();return}
+    $("#instAjuda").hidden=false;
+  };
+  $("#instFechar").onclick=()=>{$("#instAjuda").hidden=true};
+  mostrar();
+}
+function registarSW(){
+  if(!("serviceWorker" in navigator)||location.protocol!=="https:")return;
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+function barraMeses(){
+  const mc=document.querySelector("#app .months");if(!mc)return;
+  const ms=[...mc.querySelectorAll(".month[id]")];if(!ms.length)return;
+  const hoje=new Date();const idHoje="m-"+hoje.getFullYear()+"-"+(hoje.getMonth()+1);
+  const nav=document.createElement("nav");nav.className="mjump";nav.setAttribute("aria-label","Ir para o mês");
+  nav.innerHTML=ms.map(el=>`<button type="button" data-ir="${el.id}" class="${el.id===idHoje?"cur":""}${+el.dataset.n>0?" has":""}">${el.dataset.lbl}</button>`).join("");
+  nav.onclick=e=>{const t=e.target.closest("[data-ir]");if(!t)return;const el=document.getElementById(t.dataset.ir);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})};
+  mc.parentNode.insertBefore(nav,mc);
+  const cur=nav.querySelector(".cur");if(cur)nav.scrollLeft=Math.max(0,cur.offsetLeft-nav.clientWidth/2+cur.clientWidth/2);
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(!b)return;
+  const k=b.dataset.tab;const novo=k==="mapa"?(subMapa||(modo==="lista"?"lista":"cal")):k;
+  if(escEdit&&novo!=="cal"&&novo!=="lista"){escEdit=false;escSel=null;voltarConfig=false}
+  if(modo!==novo){setModo(novo);window.scrollTo({top:0})}else window.scrollTo({top:0,behavior:"smooth"});
+});
+function prepararAndroid(){
+  prepararInstalar();registarSW();
+  const app=$("#app");if(app&&window.MutationObserver)new MutationObserver(barraMeses).observe(app,{childList:true});
+}
+
 /* ---------- Firebase: entrada com Google + dados no Firestore ---------- */
 let fbAuth=null,unsubs=[];
 function fbPronto(){const c=window.FIREBASE_CONFIG;return !!(window.firebase&&c&&c.apiKey&&c.apiKey!=="COLAR_AQUI")}
@@ -442,11 +582,12 @@ function initFirebase(){
     if(iniciado)return;iniciado=true;
     document.getElementById("login").hidden=true;
     const c=document.getElementById("conta");c.textContent=u.email||"";c.title=u.email||"";c.hidden=false;document.getElementById("sair").hidden=false;
-    db=firebase.firestore();iniciarBase();
+    db=firebase.firestore();try{db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}iniciarBase();
   });
 }
 
 async function init(){
+  try{prepararAndroid()}catch(e){}
   if(fbPronto()){initFirebase();return}
   if(window.firebase&&!window.claude){mostrarLogin("Falta colar a configuração do Firebase no ficheiro (procure COLAR_AQUI).");return}
   try{db=window.claude?await window.claude.use("db"):null}catch(e){db=null}
@@ -478,11 +619,28 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let toastT;function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,3600)}
 
-function render(){renderYears();renderCreate();renderApp()}
+const ICO={
+  mapa:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  listagem:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.75" cy="6.5" r="1.25"/><circle cx="4.75" cy="12" r="1.25"/><circle cx="4.75" cy="17.5" r="1.25"/></svg>',
+  config:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v4M6 12.5v8M12 3.5v9M12 17.5v3M18 3.5v2M18 10.5v10"/><path d="M3.5 10h5M9.5 15h5M15.5 8h5"/></svg>'};
+let subMapa=null;
+function renderTabs(){
+  const t=$("#tabbar");if(!t)return;
+  const ativo=modo==="listagem"?"listagem":modo==="config"?"config":"mapa";
+  const rotMapa=vista==="letivo"?`Mapa ${letivo}/${String(letivo+1).slice(2)}`:`Mapa de ${atual||nextYear()}`;
+  const T=[["mapa",rotMapa],["listagem","Férias"],["config","Configuração"]];
+  t.innerHTML=`<div class="tabbar-in">${T.map(([k,r])=>`<button type="button" data-tab="${k}" aria-current="${ativo===k?"page":"false"}">${ICO[k]}<span>${r}</span></button>`).join("")}</div>`;
+}
+function render(){renderYears();renderCreate();renderApp();renderTabs()}
 let vista=(()=>{try{return localStorage.getItem(LS_KEY+"-vista")==="letivo"?"letivo":"civil"}catch(e){return"civil"}})();
 let letivo=(()=>{const d=new Date();return Math.max(ANO_INICIAL,d.getMonth()>=8?d.getFullYear():d.getFullYear()-1)})();
-let modo=(()=>{try{return localStorage.getItem(LS_KEY+"-modo")==="lista"?"lista":"cal"}catch(e){return"cal"}})();
-function setModo(v){modo=v;try{localStorage.setItem(LS_KEY+"-modo",v)}catch(e){}render()}
+let modo=(()=>{try{const v=localStorage.getItem(LS_KEY+"-modo");return v==="lista"||v==="listagem"||v==="config"?v:"cal"}catch(e){return"cal"}})();
+let voltarConfig=false;
+function ajustaModoEdicao(){
+  if(escEdit&&(modo==="config"||modo==="listagem")){voltarConfig=modo==="config";modo="cal";setTimeout(()=>window.scrollTo({top:0,behavior:"smooth"}),50)}
+  else if(!escEdit&&voltarConfig){voltarConfig=false;modo="config"}
+}
+function setModo(v){if(v==="cal"||v==="lista")subMapa=v;modo=v;voltarConfig=false;try{localStorage.setItem(LS_KEY+"-modo",v)}catch(e){}render()}
 const TIPO_CHIP={nac:["Feriado nacional","nac"],lag:["Feriado de Lagoa","lag"],por:["Feriado de Portimão · dia de trabalho","por"],car:["Carnaval","car"]};
 function listaHTML(meses,cFor,escMap,comAno){
   /* Como a folha de Excel: uma linha por mês, dias alinhados pelo dia da semana (37 colunas, a começar à segunda) */
@@ -519,7 +677,7 @@ function renderYears(){
   if(confirmAct==="del"&&m)conf=`<div class="confirm ybar-conf"><span>Apagar o mapa de ${m.ano} com ${m.ferias.length} dias marcados? Não dá para desfazer.</span><div class="row"><button class="btn danger" id="delYes">Sim, apagar ${m.ano}</button><button class="btn" id="confNo">Cancelar</button></div></div>`;
   if(confirmAct==="limpar"&&m)conf=`<div class="confirm ybar-conf"><span>Desmarcar os ${m.ferias.length} dias de férias de ${m.ano}? O mapa e os ajustes ficam; só os dias marcados são apagados.</span><div class="row"><button class="btn danger" id="limparYes">Sim, limpar</button><button class="btn" id="confNo">Cancelar</button></div></div>`;
   if(confirmAct==="reset"){const n=escola.mais.length+escola.menos.length+escola.extra.length+escola.retirar.length;conf=`<div class="confirm ybar-conf"><span>${n?`Apagar todas as alterações feitas à mão nos dias da escola (${n})? Fica só o calendário escolar oficial.`:"Não há alterações feitas à mão: o calendário escolar já está como o oficial."}</span><div class="row">${n?`<button class="btn danger" id="resetYes">Sim, repor</button>`:""}<button class="btn" id="confNo">${n?"Cancelar":"Fechar"}</button></div></div>`}
-  const seg2=`<div class="seg" role="group" aria-label="Mostrar como"><button id="mCal" aria-pressed="${modo==="cal"}">Calendário</button><button id="mLista" aria-pressed="${modo==="lista"}">Lista</button></div>`;
+  const seg2=(modo==="cal"||modo==="lista")?`<div class="seg" role="group" aria-label="Mostrar como"><button id="mCal" aria-pressed="${modo==="cal"}">Calendário</button><button id="mLista" aria-pressed="${modo==="lista"}">Lista</button></div>`:"";
   $("#years").innerHTML=seg+seg2+tabs+acts+conf;
 }
 function autoCreate(y){
@@ -553,7 +711,7 @@ const escOn=()=>escola.mostrar&&escola.ano2026!==null;
 function monthCard(y,mo,c,sugSet,escMap,comAno){
   const m=c.m;const off=dow(iso(y,mo,1));const nd=new Date(y,mo,0).getDate();
   const cnt=m.ferias.filter(d=>+d.slice(5,7)===mo).length;
-  let h=`<section class="month${m.ghost?" ghost":""}"><div class="mhead"><h3>${MESES[mo-1]}${comAno?` <span class="muted" style="font-weight:600">${y}</span>`:""}</h3><span class="c">${m.ghost?"sem mapa":cnt?`<b>${cnt}</b> dia${cnt>1?"s":""}`:""}</span></div><div class="grid">`;
+  let h=`<section class="month${m.ghost?" ghost":""}" id="m-${y}-${mo}" data-lbl="${MES3[mo-1]}${comAno?" "+String(y).slice(2):""}" data-n="${cnt}"><div class="mhead"><h3>${MESES[mo-1]}${comAno?` <span class="muted" style="font-weight:600">${y}</span>`:""}</h3><span class="c">${m.ghost?"sem mapa":cnt?`<b>${cnt}</b> dia${cnt>1?"s":""}`:""}</span></div><div class="grid">`;
   h+=DOW.map((x,i)=>`<span class="dow" title="${DOWN[i]}">${x}</span>`).join("");
   for(let i=0;i<off;i++)h+=`<span class="d empty"></span>`;
   for(let d=1;d<=nd;d++){
@@ -577,12 +735,20 @@ function legendHTML(carnavalLivre){
       <p class="note" style="margin:4px 0 0">Toca num dia útil para marcar ou desmarcar férias. O ponto azul indica uma ponte que compensa.</p>
     </div>`;
 }
-function periodsHTML(titulo,list,has,escMap){
-  return`<div class="panel grow"><h2>${titulo}</h2>${list.length?`<ul class="list" style="margin-top:10px">${list.map(p=>`<li><div><div class="when">${p.ini===p.fim?fmtLong(p.ini):fmt(p.ini)+" – "+fmt(p.fim)}</div><div class="det">${p.descanso} dias seguidos de descanso (${fmt(p.restIni)} a ${fmt(p.restFim)})</div>${escOn()?(()=>{let n=0;for(let d=p.ini;d<=p.fim;d=addDays(d,1))if(has(d)&&escMap.has(d))n++;return`<div class="det" style="color:var(--esc)">${n?`${n} de ${p.dias} dias com a filha sem aulas`:"A filha tem aulas nestes dias"}</div>`})():""}</div><span class="pill">${p.dias} d</span></li>`).join("")}</ul>`:`<p class="note">Ainda não marcaste férias neste período.</p>`}</div>`;
+function periodsHTML(titulo,list,has,escMap,sub,cls){
+  return`<div class="panel ${cls||"grow"}"><h2>${titulo}</h2>${sub?`<p class="note" style="margin:4px 0 0">${sub}</p>`:""}${list.length?`<ul class="list" style="margin-top:10px">${list.map(p=>`<li><div><div class="when">${p.ini===p.fim?fmtLong(p.ini):fmt(p.ini)+" – "+fmt(p.fim)}</div><div class="det">${p.descanso} dias seguidos de descanso (${fmt(p.restIni)} a ${fmt(p.restFim)})</div>${escOn()?(()=>{let n=0;for(let d=p.ini;d<=p.fim;d=addDays(d,1))if(has(d)&&escMap.has(d))n++;return`<div class="det" style="color:var(--esc)">${n?`${n} de ${p.dias} dias com a filha sem aulas`:"A filha tem aulas nestes dias"}</div>`})():""}</div><span class="pill">${p.dias} d</span></li>`).join("")}</ul>`:`<p class="note">Ainda não marcaste férias neste período.</p>`}</div>`;
+}
+function configHTML(aj,escP,save){
+  return`<section class="config"><div class="config-grid"><div class="config-col">${aj}${save}</div>${escP}</div></section>`;
+}
+function listagemHTML(per,has,escMap,quando){
+  const tot=per.reduce((a,p)=>a+p.dias,0);
+  const sub=`${quando} · ${per.length} período${per.length===1?"":"s"} · ${tot} dia${tot===1?"":"s"} de férias`;
+  return`<section class="listagem" style="margin-top:18px">${periodsHTML("Férias Marcadas",per,has,escMap,sub,"listagem-panel")}</section>`;
 }
 function saveHTML(excelYears){
   return`<div class="panel savebar"><div class="savebar-in">
-      <h2>Guardar e levar para outro PC</h2>
+      <h2>Cópia de segurança e Excel</h2>
       <div class="row">
         ${canSave()?`<button class="btn primary small" id="json">Guardar ficheiro dos mapas</button>`:""}
         <label class="btn small" for="imp">Abrir ficheiro dos mapas</label><input type="file" id="imp" accept=".json,application/json" hidden>
@@ -608,21 +774,24 @@ function renderApp(){
   const m=anos[atual];const c=ctx(m);const s=saldo(m);const per=periodos(c);const sug=sugestoes(c);const escInfo=semAulas(m.ano);const escMap=escInfo.map;const sugSet=new Set(sug.map(x=>x.d));
   const pct=s.total?Math.min(100,s.marc/s.total*100):0;
   const futuras=m.ferias.filter(d=>d>=hoje).length;
-  let html=`${saveHTML([m.ano])}<div class="yearbar"><h2>Mapa de ${m.ano}</h2></div>
+  let html=`<div class="yearbar"><h2>Mapa de ${m.ano}</h2></div>
   <div class="saldo" aria-label="Saldo de ${m.ano}">
     <div><span class="k">Direito ${m.ano}</span><span class="v num">${m.direito}</span></div>
     <div><span class="k">Vêm de ${m.ano-1}</span><span class="v num">${m.transitados}</span></div>
     <div><span class="k">Marcados</span><span class="v sea num">${s.marc}</span>${yearOf(hoje)===m.ano?`<span class="note num">${s.marc-futuras} gozados · ${futuras} por gozar</span>`:""}</div>
     <div><span class="k">${s.falta<0?"A mais":"Por marcar"}</span><span class="v num ${s.falta<0?"warn":""}">${Math.abs(s.falta)}</span></div>
     <div class="bar"><i style="width:${pct}%"></i></div></div>
-  ${escBanner()}<div class="main${modo==="lista"?" lista-mode":""}" style="margin-top:18px"><div class="${modo==="lista"?"lista":"months"}${escEdit?" editing":""}">`;
+  `;
+  const gA=escola.ano2026===null?0:gradeIn(m.ano);
+  const escHTML=()=>escPanel({titulo:"em "+m.ano,isFolga:c.isFolga,has:d=>c.set.has(d),escMap,semDados:escInfo.semDados,terminou:gA>12});
+  if(modo==="listagem")html+=listagemHTML(per,d=>c.set.has(d),escMap,String(m.ano));
+  else if(modo==="config"){}
+  else{
+  html+=`${escBanner()}<div class="main${modo==="lista"?" lista-mode":""}${escEdit?"":" sem-aside"}" style="margin-top:18px"><div class="${modo==="lista"?"lista":"months"}${escEdit?" editing":""}">`;
   if(modo==="lista")html+=listaHTML([1,2,3,4,5,6,7,8,9,10,11,12].map(mo=>[m.ano,mo]),()=>c,escMap,false);
   else for(let mo=1;mo<=12;mo++)html+=monthCard(m.ano,mo,c,sugSet,escMap,false);
-  const g=escola.ano2026===null?0:gradeIn(m.ano);
-  html+=`</div><aside><div class="aside-in">${legendHTML(m.carnavalLivre)}
-    ${periodsHTML("Períodos de "+m.ano,per,d=>c.set.has(d),escMap)}
-    ${escPanel({titulo:"em "+m.ano,isFolga:c.isFolga,has:d=>c.set.has(d),escMap,semDados:escInfo.semDados,terminou:g>12})}
-  </div></aside></div>`;
+  html+=`</div>${escEdit?`<aside><div class="aside-in">${escHTML()}</div></aside>`:""}</div><div class="legenda-baixo">${legendHTML(m.carnavalLivre)}</div>`;
+  }
   const ajHTML=`<div class="panel"><h2>Ajustes de ${m.ano}</h2>
       <div style="display:grid;gap:12px;margin-top:12px">
         <div class="fields"><label class="field">Dias de férias por ano<input type="number" id="aDireito" min="0" max="60" value="${m.direito}"></label>
@@ -630,7 +799,8 @@ function renderApp(){
         <label class="check"><input type="checkbox" id="aCarn" ${m.carnavalLivre?"checked":""}> O Carnaval é dia livre na empresa</label>
         <label class="field">Notas<textarea id="aNotas" placeholder="Ex.: férias aprovadas pela chefia a 15 de janeiro">${esc(m.notas)}</textarea></label>
       </div></div>`;
-  html+=`<div class="extras">${ajHTML}${pontesHTML(sug)}${feriadosHTML("Feriados de "+m.ano,[...c.fer.values()].sort((a,b)=>a.data<b.data?-1:1))}</div>`;
+  if(modo==="config")html+=configHTML(ajHTML,escHTML(),saveHTML([m.ano]));
+  else if(modo==="listagem")html+=`<div class="extras duas">${pontesHTML(sug)}${feriadosHTML("Feriados de "+m.ano,[...c.fer.values()].sort((a,b)=>a.data<b.data?-1:1))}</div>`;
   app.innerHTML=html;
 }
 
@@ -643,28 +813,33 @@ function renderLetivo(){
   const inWin=d=>d>=ini&&d<=fim;const cy=d=>C[yearOf(d)];
   const sugAll=[...SUG[S],...SUG[S+1]].filter(x=>inWin(x.d));const sugSet=new Set(sugAll.map(x=>x.d));
   const falta=Ys.filter(y=>!anos[y]);
-  let html=`${saveHTML(Ys.filter(y=>anos[y]))}<div class="yearbar"><div><h2>Ano letivo ${rot}</h2><span class="note">De setembro de ${S} a agosto de ${S+1}</span></div></div>
+  const anosGuardar=Ys.filter(y=>anos[y]);
+  let html=`<div class="yearbar"><div><h2>Ano letivo ${rot}</h2><span class="note">De setembro de ${S} a agosto de ${S+1}</span></div></div>
   ${falta.length?`<div class="panel row" style="justify-content:space-between;background:var(--sea-soft);border-color:var(--sea-soft);margin-bottom:12px"><span>O mapa de <b>${falta.join(" e ")}</b> ainda não existe. Os meses desse ano aparecem a tracejado; ao marcares um dia, o mapa é criado.</span>${falta.includes(nextYear())?`<button class="btn primary small" id="btnNew">Criar mapa de ${nextYear()}</button>`:""}</div>`:""}
   <div class="saldo" style="grid-template-columns:repeat(2,minmax(0,1fr))">${Ys.map(y=>{const m=anos[y];if(!m)return`<div><span class="k">Mapa de ${y}</span><span class="v num muted">—</span><span class="note">Ainda não criado</span></div>`;
     const s=saldo(m);const noLet=m.ferias.filter(inWin).length;return`<div><span class="k">Mapa de ${y}</span><span class="v sea num">${s.marc}</span><span class="note num">marcados · ${s.falta<0?(-s.falta)+" a mais":s.falta+" por marcar"}</span><span class="note num">${noLet} dentro deste ano letivo · <button class="btn small" data-y="${y}" style="padding:2px 8px">Ver ${y}</button></span></div>`}).join("")}</div>
-  ${escBanner()}<div class="main${modo==="lista"?" lista-mode":""}" style="margin-top:18px"><div class="${modo==="lista"?"lista":"months"}${escEdit?" editing":""}">`;
+  `;
+  const per=Ys.flatMap(y=>anos[y]?periodos(C[y]):[]).filter(p=>inWin(p.ini));
+  const gL=escola.ano2026===null?0:gradeIn(S);
+  const escHTML=()=>escPanel({titulo:"no ano letivo "+rot,isFolga:d=>cy(d).isFolga(d),has:d=>cy(d).set.has(d),escMap,semDados,terminou:gL>12,letivo:true});
+  if(modo==="listagem")html+=listagemHTML(per,d=>cy(d).set.has(d),escMap,"Ano letivo "+rot);
+  else if(modo==="config"){}
+  else{
+  html+=`${escBanner()}<div class="main${modo==="lista"?" lista-mode":""}${escEdit?"":" sem-aside"}" style="margin-top:18px"><div class="${modo==="lista"?"lista":"months"}${escEdit?" editing":""}">`;
   const MS=[[S,9],[S,10],[S,11],[S,12],[S+1,1],[S+1,2],[S+1,3],[S+1,4],[S+1,5],[S+1,6],[S+1,7],[S+1,8]];
   if(modo==="lista")html+=listaHTML(MS,y=>C[y],escMap,true);
   else for(const[y,mo]of MS)html+=monthCard(y,mo,C[y],sugSet,escMap,true);
-  const per=Ys.flatMap(y=>anos[y]?periodos(C[y]):[]).filter(p=>inWin(p.ini));
-  const g=escola.ano2026===null?0:gradeIn(S);
-  html+=`</div><aside><div class="aside-in">${legendHTML(C[S+1].m.carnavalLivre)}
-    ${periodsHTML("Períodos no ano letivo "+rot,per,d=>cy(d).set.has(d),escMap)}
-    ${escPanel({titulo:"no ano letivo "+rot,isFolga:d=>cy(d).isFolga(d),has:d=>cy(d).set.has(d),escMap,semDados,terminou:g>12,letivo:true})}
-  </div></aside></div>
-  <div class="extras"><div class="panel"><h2>Ajustes</h2><p class="note">Os dias de férias por ano, os dias que passam do ano anterior, o Carnaval e as notas são de cada ano civil.</p><div class="row">${Ys.filter(y=>anos[y]).map(y=>`<button class="btn small" data-y="${y}">Ajustes de ${y}</button>`).join("")}</div></div>
-    ${pontesHTML(sugAll)}${feriadosHTML("Feriados de set "+S+" a ago "+(S+1),Ys.flatMap(y=>[...C[y].fer.values()]).filter(f=>inWin(f.data)).sort((a,b)=>a.data<b.data?-1:1))}</div>`;
+  html+=`</div>${escEdit?`<aside><div class="aside-in">${escHTML()}</div></aside>`:""}</div><div class="legenda-baixo">${legendHTML(C[S+1].m.carnavalLivre)}</div>`;
+  }
+  const ajL=`<div class="panel"><h2>Ajustes</h2><p class="note">Os dias de férias por ano, os dias que passam do ano anterior, o Carnaval e as notas são de cada ano civil.</p><div class="row">${Ys.filter(y=>anos[y]).map(y=>`<button class="btn small" data-y="${y}">Ajustes de ${y}</button>`).join("")}</div></div>`;
+  if(modo==="config")html+=configHTML(ajL,escHTML(),saveHTML(anosGuardar));
+  else if(modo==="listagem")html+=`<div class="extras duas">${pontesHTML(sugAll)}${feriadosHTML("Feriados de set "+S+" a ago "+(S+1),Ys.flatMap(y=>[...C[y].fer.values()]).filter(f=>inWin(f.data)).sort((a,b)=>a.data<b.data?-1:1))}</div>`;
   $("#app").innerHTML=html;
 }
 
 function grp(ds){const out=[];for(const d of [...ds].sort()){const l=out[out.length-1];if(l&&addDays(l.fim,1)===d)l.fim=d;else out.push({ini:d,fim:d})}return out}
 const fmtR=(a,b)=>a===b?fmtLong(a)+" "+yearOf(a):fmt(a)+" "+yearOf(a)+" – "+fmt(b)+" "+yearOf(b);
-function escBanner(){return escEdit&&escola.ano2026!==null?`<div class="panel esc-banner"><b>Editar férias escolares ligado.</b> Toca num dia útil para o pôr ou tirar das férias escolares (barra verde). As tuas férias não mudam enquanto isto estiver ligado.</div>`:""}
+function escBanner(){return escEdit&&escola.ano2026!==null?`<div class="panel esc-banner"><b>Editar férias escolares ligado.</b> Toca num dia útil para o pôr ou tirar das férias escolares (barra verde). As tuas férias não mudam enquanto isto estiver ligado. <button class="btn primary small" id="escEdit2" style="margin-left:6px">Concluir</button></div>`:""}
 function manualHTML(){
   const it=[...escola.extra.map((x,i)=>({ini:x.ini,fim:x.fim,txt:x.nome,tipo:"+",del:`data-delx="${i}"`})),
     ...grp(escola.mais).map(g=>({ini:g.ini,fim:g.fim,txt:"Sem aulas",tipo:"+",del:`data-delm="${g.ini}|${g.fim}"`})),
@@ -812,12 +987,12 @@ document.addEventListener("click",e=>{
     case"json":exportJson();break;
     case"impYes":applyImport();break;
     case"impNo":importPend=null;render();break;
-    case"escEdit":case"escEdit2":escEdit=!escEdit;escSel=null;render();break;
+    case"escEdit":case"escEdit2":escEdit=!escEdit;escSel=null;ajustaModoEdicao();render();break;
     case"xTog":{const st=xEstado();if(!st){toast("Escolhe primeiro as datas em “De” e “Até”.");$("#xIni").focus();break}const a=$("#xIni").value,b=$("#xFim").value||a;aplicarEsc(a<=b?a:b,a<=b?b:a,!st.semAulas);break}
     case"selTog":{if(!escSel)break;const st=estadoEsc(escSel.ini,escSel.fim);if(!st.uteis){toast("A seleção só tem fins de semana.");break}aplicarEsc(escSel.ini,escSel.fim,!st.semAulas);break}
     case"selClear":escSel=null;render();break;
-    case"modoDatas":escEdit=false;escSel=null;render();break;
-    case"modoCal":escEdit=true;escSel=null;render();toast("Toca num dia do calendário para o selecionar.");break;
+    case"modoDatas":escEdit=false;escSel=null;ajustaModoEdicao();render();break;
+    case"modoCal":escEdit=true;escSel=null;ajustaModoEdicao();render();toast("Toca num dia do calendário para o selecionar.");break;
     case"limparAsk":confirmAct="limpar";renderYears();break;
     case"resetAsk":confirmAct="reset";renderYears();break;
     case"confNo":confirmAct=null;renderYears();break;
