@@ -210,6 +210,13 @@ button,.btn,label,.d,a{-webkit-tap-highlight-color:transparent;touch-action:mani
 body{padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(40px,calc(env(safe-area-inset-bottom,0px) + 24px))}
 .btn.install{background:var(--sea-soft);color:var(--sea);border-color:var(--sea)}
 .mjump{display:none}
+.calform{border-top:1px solid var(--line);padding-top:12px;display:block}
+.calform[open]{display:grid;gap:10px}
+.calform summary{font-size:16px}
+.calgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.calgrid h3{grid-column:1/-1;margin-top:6px;font-size:14px;color:var(--sea)}
+.calgrid input[type=date],.calform select{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);width:100%;min-width:0;min-height:40px}
+@media (max-width:560px){.calgrid{grid-template-columns:minmax(0,1fr)}}
 .btn.rodar{display:none;align-items:center;gap:6px;border-color:var(--sea);color:var(--sea)}
 .btn.rodar svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 @media (max-width:860px){.btn.rodar{display:inline-flex}}
@@ -329,7 +336,7 @@ html.sem-rolar,html.sem-rolar body{overflow:hidden}
   <nav class="years" id="years" aria-label="Anos"></nav>
   <section id="createBox" class="panel create" hidden></section>
   <div id="app"><div class="panel empty-state"><p class="muted">A carregar os teus mapas…</p></div></div>
-  <footer>Mapa de Férias · jprocha-pt · <span id="versaoApp">versão 1.2</span> · 2026</footer>
+  <footer>Mapa de Férias · jprocha-pt · <span id="versaoApp">versão 1.4</span> · 2026</footer>
 </div>
 <div id="rodado" class="rodado" hidden role="dialog" aria-modal="true" aria-label="Lista rodada">
   <div class="rodado-in">
@@ -477,16 +484,28 @@ function setStatus(t,cls){const s=document.getElementById("status");s.textConten
 /* Calendário escolar oficial do continente. Datas = dias sem aulas (inclui fins de semana dentro da pausa). */
 const ESC_OFICIAL={
   2025:{natal:["2025-12-17","2026-01-04"],carnaval:["2026-02-16","2026-02-18"],pascoa:["2026-03-28","2026-04-12"],fim:{pre1:"2026-06-30",mid:"2026-06-12",early:"2026-06-05"}},
-  2026:{natal:["2026-12-16","2027-01-03"],carnaval:["2027-02-08","2027-02-10"],pascoa:["2027-03-20","2027-04-04"],fim:{pre1:"2027-06-30",mid:"2027-06-11",early:"2027-06-04"},inicio:{basico:"2026-09-11",sec:"2026-09-21"}}
+  2026:{natal:["2026-12-16","2027-01-03"],carnaval:["2027-02-08","2027-02-10"],pascoa:["2027-03-20","2027-04-04"],fim:{pre1:"2027-06-30",mid:"2027-06-11",early:"2027-06-04"},inicio:{basico:"2026-09-11",sec:"2026-09-21"}},
+  /* 2027/28 — Despacho n.º 8368/2024 (calendário fixado até 2027-2028): 1.º período de 13-15 set 2027 a 17 dez 2027; 2.º de 3 jan a 31 mar 2028; 3.º de 18 abr a 7/14/30 jun 2028 */
+  2027:{natal:["2027-12-18","2028-01-02"],carnaval:["2028-02-28","2028-03-01"],pascoa:["2028-04-01","2028-04-17"],fim:{pre1:"2028-06-30",mid:"2028-06-14",early:"2028-06-07"},inicio:{basico:"2027-09-13",sec:"2027-09-13"}}
 };
+/* Calendários escolares acrescentados pelo utilizador (guardados no Firebase, em config/escola → cal); têm prioridade sobre os de cima */
+const ISO_RE=/^\d{4}-\d\d-\d\d$/;
+function calOf(S){const u=escola&&escola.cal&&escola.cal[S];return u||ESC_OFICIAL[S]}
+function normCal(c){const out={};if(!c||typeof c!=="object")return out;
+  for(const k of Object.keys(c)){const v=c[k];const y=+k;if(!(y>=2020&&y<=2100)||!v)continue;
+    const ok=a=>Array.isArray(a)&&a.length===2&&ISO_RE.test(a[0])&&ISO_RE.test(a[1]);
+    if(!ok(v.natal)||!ok(v.carnaval)||!ok(v.pascoa)||!v.fim||!["pre1","mid","early"].every(x=>ISO_RE.test(v.fim[x]))||!v.inicio||!ISO_RE.test(v.inicio.basico))continue;
+    out[y]={natal:[...v.natal],carnaval:[...v.carnaval],pascoa:[...v.pascoa],fim:{pre1:v.fim.pre1,mid:v.fim.mid,early:v.fim.early},inicio:{basico:v.inicio.basico,sec:ISO_RE.test(v.inicio.sec||"")?v.inicio.sec:v.inicio.basico},periodos:v.periodos&&typeof v.periodos==="object"?{...v.periodos}:null};}
+  return out}
 const ANOS_ESC=["Pré-escolar","1.º ano","2.º ano","3.º ano","4.º ano","5.º ano","6.º ano","7.º ano","8.º ano","9.º ano","10.º ano","11.º ano","12.º ano"];
 const ESC_NOME="Escola";
-let escola={mostrar:true,ano2026:null,local:"portimao",nome:ESC_NOME,extra:[],retirar:[],mais:[],menos:[]};let escEdit=false;let escTimer=null;
+let escola={mostrar:true,ano2026:null,local:"portimao",nome:ESC_NOME,extra:[],retirar:[],mais:[],menos:[],cal:{}};let escEdit=false;let escTimer=null;
 function normEsc(o){o=o||{};return{nome:typeof o.nome==="string"?o.nome.slice(0,120):ESC_NOME,mostrar:o.mostrar!==false,ano2026:(o.ano2026===null||o.ano2026===undefined||o.ano2026==="")?null:Math.max(0,Math.min(12,+o.ano2026)),local:["portimao","lagoa","outro"].includes(o.local)?o.local:"portimao",
   extra:Array.isArray(o.extra)?o.extra.filter(x=>x&&/^\d{4}-\d\d-\d\d$/.test(x.ini)&&/^\d{4}-\d\d-\d\d$/.test(x.fim)).map(x=>({ini:x.ini<=x.fim?x.ini:x.fim,fim:x.ini<=x.fim?x.fim:x.ini,nome:String(x.nome||"Sem aulas").slice(0,60)})):[],
   retirar:Array.isArray(o.retirar)?o.retirar.filter(x=>x&&/^\d{4}-\d\d-\d\d$/.test(x.ini)&&/^\d{4}-\d\d-\d\d$/.test(x.fim)).map(x=>({ini:x.ini<=x.fim?x.ini:x.fim,fim:x.ini<=x.fim?x.fim:x.ini,nome:String(x.nome||"Com aulas").slice(0,60)})):[],
   mais:Array.isArray(o.mais)?[...new Set(o.mais.filter(d=>/^\d{4}-\d\d-\d\d$/.test(d)))].sort():[],
-  menos:Array.isArray(o.menos)?[...new Set(o.menos.filter(d=>/^\d{4}-\d\d-\d\d$/.test(d)))].sort():[]}}
+  menos:Array.isArray(o.menos)?[...new Set(o.menos.filter(d=>/^\d{4}-\d\d-\d\d$/.test(d)))].sort():[],
+  cal:normCal(o.cal)}}
 const gradeIn=S=>escola.ano2026+(S-2026);
 const catFim=g=>g<=4?"pre1":[9,11,12].includes(g)?"early":"mid";
 function semAulas(y){
@@ -494,15 +513,15 @@ function semAulas(y){
   let estimado=false,semDados=false;
   const add=(a,b,n)=>{for(let d=a;d<=b;d=addDays(d,1))if(yearOf(d)===y&&!map.has(d))map.set(d,n)};
   for(const x of escola.extra)add(x.ini,x.fim,x.nome);
-  for(const S of[y-1,y]){const C=ESC_OFICIAL[S];const g=gradeIn(S);if(g>12||!C)continue;
+  for(const S of[y-1,y]){const C=calOf(S);const g=gradeIn(S);if(g>12||!C)continue;
     add(C.natal[0],C.natal[1],"Férias do Natal");add(C.carnaval[0],C.carnaval[1],"Férias do Carnaval");add(C.pascoa[0],C.pascoa[1],"Férias da Páscoa")}
   const gPrev=gradeIn(y-1),gNow=gradeIn(y);
-  if(gPrev<=12){const P=ESC_OFICIAL[y-1];
-    if(P){const ini=addDays(P.fim[catFim(gPrev)],1);let fim;const N=ESC_OFICIAL[y];
+  if(gPrev<=12){const P=calOf(y-1);
+    if(P){const ini=addDays(P.fim[catFim(gPrev)],1);let fim;const N=calOf(y);
       if(gNow>12)fim=iso(y,12,31);else if(N&&N.inicio)fim=addDays(gNow>=10?N.inicio.sec:N.inicio.basico,-1);else{fim=iso(y,9,10);estimado=true}
       add(ini,fim,"Férias de verão"+(estimado?" (fim estimado)":""))}
     else semDados=true}
-  if(!ESC_OFICIAL[y]&&gNow<=12)semDados=true;
+  if(!calOf(y)&&gNow<=12)semDados=true;
   if(escola.local!=="outro"&&gNow<=12){const d=escola.local==="portimao"?iso(y,12,11):iso(y,9,8);add(d,d,escola.local==="portimao"?"Feriado municipal de Portimão":"Feriado municipal de Lagoa")}
   for(const x of escola.retirar)for(let d=x.ini;d<=x.fim;d=addDays(d,1))map.delete(d);
   for(const d of escola.mais)if(yearOf(d)===y&&!map.has(d))map.set(d,"Acrescentado à mão");
@@ -859,7 +878,7 @@ function renderLetivo(){
   const C={},SUG={},INF={};const escMap=new Map();let semDados=false;
   for(const y of Ys){C[y]=ctx(mapFor(y));const sg=anos[y]?sugestoes(C[y]):[];SUG[y]=sg;INF[y]=semAulas(y);
     for(const[d,n]of INF[y].map)if(d>=ini&&d<=fim)escMap.set(d,n)}
-  if(escola.ano2026!==null&&(!ESC_OFICIAL[S]))semDados=true;
+  if(escola.ano2026!==null&&(!calOf(S)))semDados=true;
   const inWin=d=>d>=ini&&d<=fim;const cy=d=>C[yearOf(d)];
   const sugAll=[...SUG[S],...SUG[S+1]].filter(x=>inWin(x.d));const sugSet=new Set(sugAll.map(x=>x.d));
   const falta=Ys.filter(y=>!anos[y]);
@@ -921,9 +940,51 @@ function escPanel(o){
    ${o.terminou?`<p class="note">Neste período a tua filha já terminou o 12.º ano.</p>`:`
    <div class="esc-sum"><span><b class="num">${uteis}</b> dias úteis sem aulas ${o.titulo}</span><span><b class="num">${juntos}</b> coincidem com as tuas férias · <b class="num">${uteis-juntos}</b> estás a trabalhar</span></div>
    <ul class="list">${bl.map(b=>`<li><div><div class="when">${b.ini===b.fim?fmtLong(b.ini)+" "+yearOf(b.ini):fmt(b.ini)+" "+yearOf(b.ini)+" – "+fmt(b.fim)+" "+yearOf(b.fim)}</div><div class="det">${esc(b.nome)}</div></div></li>`).join("")||`<li class="note">Sem pausas registadas.</li>`}</ul>`}
-   ${o.semDados?`<p class="note">O calendário escolar oficial deste período ainda não foi publicado. Usa o botão Editar para marcar os dias quando a escola os divulgar.</p>`:""}
+   ${o.semDados?`<p class="note">Ainda não há calendário escolar oficial para todo este período. Quando for publicado, acrescente-o em <b>Calendário escolar oficial</b>, no fim deste painel.</p>`:""}
    <p class="note">Datas do calendário escolar oficial do continente. Confirma no documento "Organização do Ano Letivo" do agrupamento se há pausas próprias ou semestres, e acerta-as aqui à mão.</p>
+   ${calFormHTML()}
   </div>`;
+}
+let calAno=null;
+function calFormHTML(){
+  const anosApp=Object.keys(ESC_OFICIAL).map(Number),anosMeus=Object.keys(escola.cal||{}).map(Number);
+  const todos=[...new Set([...anosApp,...anosMeus])].sort((a,b)=>a-b);
+  const rot=S=>`${S}/${String(S+1).slice(2)}`;
+  const prox=(()=>{let S=Math.max(...anosApp,...anosMeus,2025)+1;return S})();
+  if(calAno===null)calAno=prox;
+  const v=(escola.cal&&escola.cal[calAno]&&escola.cal[calAno].periodos)||{};
+  const temOficial=!!ESC_OFICIAL[calAno];
+  const anosSel=[];for(let S=2025;S<=Math.max(prox+3,2030);S++)anosSel.push(S);
+  const campo=(id,rotulo,obr)=>`<label class="field">${rotulo}${obr?"":" <span class=\"muted\">(opcional)</span>"}<input type="date" id="${id}" value="${esc(v[id]||"")}"></label>`;
+  return`<details class="calform" ${window.__calOpen?"open":""}><summary>Calendário escolar oficial</summary>
+    <p class="note">Anos letivos que a app conhece: ${todos.map(S=>`<b>${rot(S)}</b>${anosMeus.includes(S)?" (acrescentado por si)":""}`).join(", ")}.</p>
+    <p class="note">Quando sair o calendário de um novo ano letivo, escolha o ano e copie as datas das notícias ou do despacho. A app calcula as férias a partir dos períodos.</p>
+    <label class="field">Ano letivo<select id="calAno">${anosSel.map(S=>`<option value="${S}" ${S===calAno?"selected":""}>${rot(S)}${ESC_OFICIAL[S]?" · já na app":""}${anosMeus.includes(S)?" · acrescentado":""}</option>`).join("")}</select></label>
+    ${temOficial&&!anosMeus.includes(calAno)?`<p class="note">Este ano letivo já vem com a app. Só preencha se quiser corrigir as datas.</p>`:""}
+    <div class="calgrid">
+      <h3>1.º período</h3>
+      ${campo("p1ini","Início das aulas",true)}${campo("p1sec","Início do secundário, se for diferente",false)}${campo("p1fim","Último dia de aulas antes do Natal",true)}
+      <h3>2.º período</h3>
+      ${campo("p2ini","Regresso às aulas em janeiro",true)}${campo("carIni","Carnaval: primeiro dia sem aulas",true)}${campo("carFim","Carnaval: último dia sem aulas",true)}${campo("p2fim","Último dia de aulas antes da Páscoa",true)}
+      <h3>3.º período</h3>
+      ${campo("p3ini","Regresso às aulas depois da Páscoa",true)}${campo("fimEarly","Fim das aulas: 9.º, 11.º e 12.º anos",true)}${campo("fimMid","Fim das aulas: 5.º a 8.º e 10.º anos",true)}${campo("fimPre1","Fim das aulas: pré-escolar e 1.º ciclo",true)}
+    </div>
+    <div class="row"><button class="btn primary small" id="calGuardar" type="button">Guardar ${rot(calAno)}</button>${anosMeus.includes(calAno)?`<button class="btn small danger" id="calApagar" type="button">Apagar o que acrescentei para ${rot(calAno)}</button>`:""}</div>
+  </details>`;
+}
+function calGuardar(){
+  const g=id=>{const el=$("#"+id);return el?el.value:""};
+  const P={p1ini:g("p1ini"),p1sec:g("p1sec"),p1fim:g("p1fim"),p2ini:g("p2ini"),carIni:g("carIni"),carFim:g("carFim"),p2fim:g("p2fim"),p3ini:g("p3ini"),fimEarly:g("fimEarly"),fimMid:g("fimMid"),fimPre1:g("fimPre1")};
+  const obr=["p1ini","p1fim","p2ini","carIni","carFim","p2fim","p3ini","fimEarly","fimMid","fimPre1"];
+  const falta=obr.filter(k=>!ISO_RE.test(P[k]));if(falta.length){toast("Faltam datas: preencha todos os campos que não dizem opcional.");const el=$("#"+falta[0]);if(el)el.focus();return}
+  const S=calAno;
+  if(!(P.p1ini>=iso(S,8,15)&&P.p1ini<=iso(S,10,15))){toast(`O início das aulas tem de ser em setembro de ${S}.`);$("#p1ini").focus();return}
+  const ord=[["p1ini","p1fim"],["p1fim","p2ini"],["p2ini","carIni"],["carIni","carFim"],["carFim","p2fim"],["p2fim","p3ini"],["p3ini","fimEarly"],["fimEarly","fimMid"],["fimMid","fimPre1"]];
+  for(const[a,b]of ord)if(!(P[a]<=P[b])){toast("As datas não estão por ordem. Confirme os campos assinalados.");const el=$("#"+b);if(el)el.focus();return}
+  escola.cal=escola.cal||{};
+  escola.cal[S]={natal:[addDays(P.p1fim,1),addDays(P.p2ini,-1)],carnaval:[P.carIni,P.carFim],pascoa:[addDays(P.p2fim,1),addDays(P.p3ini,-1)],
+    fim:{pre1:P.fimPre1,mid:P.fimMid,early:P.fimEarly},inicio:{basico:P.p1ini,sec:ISO_RE.test(P.p1sec)?P.p1sec:P.p1ini},periodos:P};
+  saveEsc();render();toast(`Calendário escolar ${S}/${String(S+1).slice(2)} guardado.`);
 }
 
 /* ---------- ações ---------- */
@@ -1051,6 +1112,8 @@ document.addEventListener("click",e=>{
     case"vCivil":setVista("civil");break;
     case"mCal":setModo("cal");break;
     case"mLista":setModo("lista");break;
+    case"calGuardar":calGuardar();break;
+    case"calApagar":{if(escola.cal&&escola.cal[calAno]){delete escola.cal[calAno];saveEsc();render();toast("Apagado. Fica o calendário que vem com a app, se existir.")}break}
     case"vLetivo":setVista("letivo");break;
     case"verLetivo":{const y=atual;letivo=y-1;setVista("letivo");window.scrollTo({top:0,behavior:"smooth"});break}
   }
@@ -1085,8 +1148,9 @@ document.addEventListener("change",e=>{
   else if(id==="eMostrar"){escola.mostrar=e.target.checked;saveEsc();render()}
   else if(id==="eAno"){escola.ano2026=e.target.value===""?null:+e.target.value;saveEsc();render()}
   else if(id==="eLocal"){escola.local=e.target.value;saveEsc();render()}
+  else if(id==="calAno"){calAno=+e.target.value;window.__calOpen=true;render()}
 });
-document.addEventListener("toggle",e=>{if(e.target.id==="ajustes")window.__ajOpen=e.target.open;if(e.target.id==="xDet")window.__xOpen=e.target.open},true);
+document.addEventListener("toggle",e=>{if(e.target.classList&&e.target.classList.contains("calform"))window.__calOpen=e.target.open;if(e.target.id==="ajustes")window.__ajOpen=e.target.open;if(e.target.id==="xDet")window.__xOpen=e.target.open},true);
 
 function temaAtual(){const t=document.documentElement.getAttribute("data-theme");if(t)return t;return matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
 function temaBtn(){const b=document.getElementById("tema");if(b)b.textContent=temaAtual()==="dark"?"☀ Tema claro":"☾ Tema escuro"}
